@@ -1,0 +1,101 @@
+:root {
+    --h-select: 100px;
+    --h-export: 50px;
+    --h-content: calc(100vh - var(--h-select) - var(--h-export) - 25px);
+    
+    --theme-color:#000;
+    --theme-font-color:#fff;
+    
+  }
+#pnlSelect{
+ height: var(--h-select);   
+}
+#pnlExport{
+ height: var(--h-export);   
+}
+#pnlContent{
+ height: var(--h-content);   
+}
+
+table{
+    border-collapse: separate;
+    border-spacing: 0 !important;
+}
+.tb-content{
+    height: calc(var(--h-content) - 15px);   
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    overflow: auto;
+
+}
+
+tbody tr.selected td{
+    background-color: #A9A9A9 !important;
+    color: #000;
+    font-weight: bold;
+}
+
+#pnlContentTableDate {
+    height: var(--h-content-table-date);
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+}
+
+
+
+  :is(#pnlSelect,#pnlExport) *.input-group-text.span-layout{
+    background-color: var(--theme-color) !important;
+    color: var(--theme-font-color) !important;
+    border: 1px solid var(--theme-color) !important;
+    display: flex;
+    justify-content: end;
+    font-weight: bold;
+  }
+
+  :is(#pnlSelect,#pnlExport)  *:where(.form-select,.form-control){
+    background-color: var(--theme-font-color) !important;
+    color: var(--theme-color) !important;
+    border: 1px solid var(--theme-color) !important;
+   
+  }
+  
+  
+  :is(#pnlSelect,#pnlExport)  *:where(input[type=text],select,select option){
+    background-color: #fff;
+    color: var(--theme-color);
+  }
+  
+
+  
+  
+  #pnlSpecDailyPerformance {
+    height: var(--h-spec-chart-view);
+    border: 2px solid var(--theme-color);
+    border-radius: 5px 0 0 5px;
+  }
+  #pnlSpecMonthlyPerformance {
+    height: var(--h-spec-chart-view);
+    border: 2px solid var(--theme-chart-monthly-color);
+    border-radius: 5px 0 0 5px;
+  }
+  
+  #pnlButtonChartDaily, #pnlButtonChartMonthly {
+    height: var(--h-btn-chart);
+  }
+  
+  #pnlButtonChartDaily div button,#pnlButtonChartMonthly div button{
+    background-color:transparent;
+  }
+  #pnlButtonChartDaily div button *{
+    color: var(--theme-color);
+  }
+  #pnlButtonChartMonthly div button *{
+    color: var(--theme-chart-monthly-color);
+  }
+  
+  
+  #pnlContentDailyPerformance, #pnlContentMonthlyPerformance {
+    height: var(--h-content-chart-view);
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+  }
