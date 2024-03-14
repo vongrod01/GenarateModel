@@ -82,7 +82,10 @@ router.get('/tableDescription',async (req, res) => {
     let host = req_json.host;
     let port = req_json.port;
     let tbName = req_json.tbName;
-    let sqlStr = `
+    
+
+    if(provider === 'mysql'){
+        let sqlStr = `
 
 USE information_schema;
    SELECT                                                            
@@ -140,8 +143,6 @@ USE information_schema;
     ORDER BY                                                         
       COLUMNS.ORDINAL_POSITION
     `
-
-    if(provider === 'mysql'){
         port = ['undefined',0,''].includes(port)?3306:port
         try {
             
