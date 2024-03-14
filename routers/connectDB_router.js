@@ -10,18 +10,23 @@ router.get('/genmodel', (req, res) => {
 
 router.get('/databaseList',async (req, res) => {
     let req_json = JSON.parse(req.query.req_json)
-    req.session.connectionDB = req_json
-    console.log('/databaseList req.session.connectionDB : ',req.session.connectionDB)
-    if(req.session.connectionDB.provider === 'mysql'){
-        req.session.connectionDB.port = ['undefined',0,''].includes(req.session.connectionDB.port)?3306:req.session.connectionDB.port
+
+    let provider = req_json.provider;
+    let user = req_json.user;
+    let password = req_json.password;
+    let host = req_json.host;
+    let port = req_json.port;
+
+    if(provider === 'mysql'){
+        port = ['undefined',0,''].includes(port)?3306:port
         try {
             
             let mysql = new connMysql.MysqlConnection({
                 // "database": databaseName,
-                "user": req.session.connectionDB.user,
-                "password": req.session.connectionDB.password,
-                "host": req.session.connectionDB.host,
-                "port": req.session.connectionDB.port
+                "user": user,
+                "password": password,
+                "host": host,
+                "port": port
             })
             await mysql.execSQL('SHOW DATABASES')
             res.json(mysql.dataSet) 
@@ -38,21 +43,25 @@ router.get('/databaseList',async (req, res) => {
 
 router.get('/tableList',async (req, res) => {
     let req_json = JSON.parse(req.query.req_json)
-    req.session.connectionDB.databaseName = req_json.databaseName
-    console.log('/tableList req.session.connectionDB : ',req.session.connectionDB)
+    let provider = req_json.provider;
+    let databaseName = req_json.databaseName;
+    let user = req_json.user;
+    let password = req_json.password;
+    let host = req_json.host;
+    let port = req_json.port;
 
-    if(req.session.connectionDB.provider === 'mysql'){
-        req.session.connectionDB.port = ['undefined',0,''].includes(req.session.connectionDB.port)?3306:req.session.connectionDB.port
+    if(provider === 'mysql'){
+        port = ['undefined',0,''].includes(port)?3306:port
         try {
             
             let mysql = new connMysql.MysqlConnection({
-                "database": req.session.connectionDB.databaseName,
-                "user": req.session.connectionDB.user,
-                "password": req.session.connectionDB.password,
-                "host": req.session.connectionDB.host,
-                "port": req.session.connectionDB.port
+                "database": databaseName,
+                "user": user,
+                "password": password,
+                "host": host,
+                "port": port
             })
-            await mysql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${req.session.connectionDB.databaseName}'`)
+            await mysql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${databaseName}'`)
             res.json(mysql.dataSet) 
         } catch (error) {
             console.log(error)
@@ -66,7 +75,12 @@ router.get('/tableList',async (req, res) => {
 })
 router.get('/tableDescription',async (req, res) => {
     let req_json = JSON.parse(req.query.req_json)
-    
+    let provider = req_json.provider;
+    let databaseName = req_json.databaseName;
+    let user = req_json.user;
+    let password = req_json.password;
+    let host = req_json.host;
+    let port = req_json.port;
     let tbName = req_json.tbName;
     let sqlStr = `
 
@@ -121,22 +135,22 @@ USE information_schema;
     FROM                                                             
       COLUMNS                                                      
     WHERE                                                            
-     COLUMNS.TABLE_SCHEMA = '${req.session.connectionDB.databaseName }' AND   
+     COLUMNS.TABLE_SCHEMA = '${databaseName}' AND   
      COLUMNS.TABLE_NAME = '${tbName}'
     ORDER BY                                                         
       COLUMNS.ORDINAL_POSITION
     `
 
-    if(req.session.connectionDB.provider === 'mysql'){
-        req.session.connectionDB.port = ['undefined',0,''].includes(req.session.connectionDB.port)?3306:req.session.connectionDB.port
+    if(provider === 'mysql'){
+        port = ['undefined',0,''].includes(port)?3306:port
         try {
             
             let mysql = new connMysql.MysqlConnection({
-                "database": req.session.connectionDB.databaseName,
-                "user": req.session.connectionDB.user,
-                "password": req.session.connectionDB.password,
-                "host": req.session.connectionDB.host,
-                "port": req.session.connectionDB.port
+                "database": databaseName,
+                "user": user,
+                "password": password,
+                "host": host,
+                "port": port
             })
             await mysql.execSQL(sqlStr)
             res.json(mysql.dataSet) 
