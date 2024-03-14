@@ -7,16 +7,22 @@
     <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css">
+    <link rel="icon" type="image/x-icon" href="/img/icon-title.ico">
     <script src="chart.js/dist/chart.umd.js"></script>
     <script src="bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/helper.js"></script>
     <script src="js/connect_db.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 
-    <title>Document</title>
+    <title>Genarate Model</title>
 </head>
 
 <body>
+    <header class="mb-2" id="pnlHeader">
+        <span id="txtHeader">
+            GENARATE &nbsp MODEL &nbsp VERSION(1.0.0)
+        </span>
+    </header>
     <div class="box-shadow4 m-1 mb-2 rounded-2 p-2 d-flex justify-content-center" id="pnlSelect">
         <div class="w-75">
 
@@ -30,7 +36,7 @@
                         style="width: 120px;">Provider</span>
                     <select class="form-select search-border" name="selDatabaseProvider" id="selDatabaseProvider">
                         <option value="" class="text-center" disabled selected>-- Select Provider --</option>
-                        <option value="mysql">MySQL</option>
+                        <option value="mysql" selected>MySQL</option>
                         <option value="mssql">Microsoft SQL Server</option>
                         <option value="postgresql">PostgreSQL</option>
                     </select>
@@ -39,12 +45,12 @@
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtHost" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">Host</span>
-                    <input type="text" class="form-control search-border" name="edtHost" id="edtHost" />
+                    <input type="text" class="form-control search-border" name="edtHost" value="localhost" id="edtHost" />
                 </div>
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtPort" class="input-group-text span-layout search-border text-end"
                         style="width: 80px;">Port</span>
-                    <input type="number" class="form-control search-border" name="edtPort" id="edtPort" />
+                    <input type="number" class="form-control search-border" name="edtPort" value=3306 id="edtPort" />
                 </div>
 
 
@@ -56,12 +62,12 @@
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtUser" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">User</span>
-                    <input type="text" class="form-control search-border" name="edtUser" id="edtUser" />
+                    <input type="text" class="form-control search-border" name="edtUser" value="root" id="edtUser" />
                 </div>
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtPassword" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">Password</span>
-                    <input type="password" class="form-control search-border" name="edtPassword" id="edtPassword" />
+                    <input type="password" class="form-control search-border" name="edtPassword" value="rt9125" id="edtPassword" />
                 </div>
                 <div class="input-group me-2" style="width: 33%;">
 
@@ -78,12 +84,12 @@
 
     </div>
     <div class="m-1 mb-2 p-2 d-flex" id="pnlExport">
-        <div class="input-group me-1" style="width: 30%;">
+        <div class="input-group me-1" style="width: 25%;">
             <span for="selProgramming"
                 class="input-group-text span-layout search-border text-end">Framework/Programming</span>
             <select class="form-select search-border" name="selProgramming" id="selProgramming">
                 <option value="" class="text-center" disabled selected>-- Select Framework/Programming --</option>
-                <option value="nodejs">Node.js</option>
+                <option value="nodejs" selected>Node.js</option>
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
             </select>
@@ -94,35 +100,32 @@
         <div class="btn btn-primary">Button</div>
         <div class="btn btn-primary">Button</div>
     </div>
-    <div class="box-shadow4 m-1 rounded-2 p-2 d-flex justify-content-center" id="pnlContent">
-        <div class="pe-1 tb-content">
+    <div class="box-shadow4 mb-2 m-1 rounded-2 p-2 d-flex justify-content-center" id="pnlContent">
+        <div class="tb-content">
             <table id="tbDatabaseList" class="table table-striped table-bordered table-hover w-100">
                 <thead class="position-sticky top-0">
                     <tr>
                         <th class="text-center align-middle" rowspan="3">Database</th>
                     </tr>
-
-
                 </thead>
                 <tbody>
 
                 </tbody>
             </table>
         </div>
-        <div class="pe-1 tb-content">
+        <div class="ps-3 tb-content">
             <table id="tbTableList" class="table table-striped table-bordered table-hover w-100">
                 <thead class="position-sticky top-0">
                     <tr>
-                        <th class="text-center align-middle">All</th>
-                        <th class="text-center align-middle" rowspan="2">Table</th>
-                    </tr>
-                    <tr>
+
                         <th class="text-center align-middle">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" value="" id="chkSelectAll">
                             </div>
                         </th>
+                        <th class="text-center align-middle" rowspan="2">Table</th>
                     </tr>
+                   
     
 
                 </thead>
@@ -131,8 +134,8 @@
                 </tbody>
             </table>
         </div>
-        <div class="tb-content">
-            <table id="tbDatabaseName" class="table table-striped table-bordered table-hover w-100">
+        <div class="ps-3 tb-content">
+            <table id="tbTableDesciption" class="table table-striped table-bordered table-hover w-100">
                 <thead class="position-sticky top-0">
                     <tr>
                         <th class="text-center align-middle" colspan="4">Field</th>
@@ -152,7 +155,11 @@
             </table>
         </div>
     </div>
-
+    <footer>
+        <span class="me-2" id="txtFooter">
+            Developed by Adisorn Vongrod
+        </span>
+    </footer>
 
 </body>
 
