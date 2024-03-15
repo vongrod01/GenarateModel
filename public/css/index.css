@@ -32,9 +32,10 @@ header {
 header span {
   align-self: center;
   color: var(--theme-font-color);
-  font-weight: 500;
+  font-weight: 900;
   font-size: xx-large;
   text-align: center;
+  word-spacing: 20px
 }
 footer {
   height: var(--h-footer);
@@ -70,11 +71,6 @@ tbody tr.selected td {
   font-weight: bold;
 }
 
-#pnlContentTableDate {
-  height: var(--h-content-table-date);
-  box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
 
 
 
@@ -101,42 +97,19 @@ tbody tr.selected td {
 }
 
 
-
-
-#pnlSpecDailyPerformance {
-  height: var(--h-spec-chart-view);
-  border: 2px solid var(--theme-color);
-  border-radius: 5px 0 0 5px;
+#tbDatabaseList thead tr th{
+  color: #fff;
+  background-color: var(--bs-primary);
 }
-
-#pnlSpecMonthlyPerformance {
-  height: var(--h-spec-chart-view);
-  border: 2px solid var(--theme-chart-monthly-color);
-  border-radius: 5px 0 0 5px;
+#tbTableList thead tr th{
+  color: #fff;
+  background-color: var(--bs-secondary);
 }
-
-#pnlButtonChartDaily,
-#pnlButtonChartMonthly {
-  height: var(--h-btn-chart);
-}
-
-#pnlButtonChartDaily div button,
-#pnlButtonChartMonthly div button {
-  background-color: transparent;
-}
-
-#pnlButtonChartDaily div button * {
-  color: var(--theme-color);
-}
-
-#pnlButtonChartMonthly div button * {
-  color: var(--theme-chart-monthly-color);
+#tbTableDesciption thead tr th{
+  color: #000;
+  background-color: var(--bs-info);
 }
 
 
-#pnlContentDailyPerformance,
-#pnlContentMonthlyPerformance {
-  height: var(--h-content-chart-view);
-  box-sizing: border-box;
-  -webkit-box-sizing: border-box;
-}
+
+

@@ -10,8 +10,7 @@
     <link rel="icon" type="image/x-icon" href="/img/icon-title.ico">
     <script src="chart.js/dist/chart.umd.js"></script>
     <script src="bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/helper.js"></script>
-    <script src="js/connect_db.js"></script>
+    
     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 
     <title>Genarate Model</title>
@@ -20,7 +19,7 @@
 <body>
     <header class="mb-2" id="pnlHeader">
         <span id="txtHeader">
-            GENARATE &nbsp MODEL &nbsp VERSION(1.0.0)
+            <%=titleHeader%> VERSION(<%=version%>)
         </span>
     </header>
     <div class="box-shadow4 m-1 mb-2 rounded-2 p-2 d-flex justify-content-center" id="pnlSelect">
@@ -35,7 +34,6 @@
                     <span for="selDatabaseProvider" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">Provider</span>
                     <select class="form-select search-border" name="selDatabaseProvider" id="selDatabaseProvider">
-                        <option value="" class="text-center" disabled selected>-- Select Provider --</option>
                         <option value="mysql" selected>MySQL</option>
                         <option value="mssql">Microsoft SQL Server</option>
                         <option value="postgresql">PostgreSQL</option>
@@ -88,17 +86,14 @@
             <span for="selProgramming"
                 class="input-group-text span-layout search-border text-end">Framework/Programming</span>
             <select class="form-select search-border" name="selProgramming" id="selProgramming">
-                <option value="" class="text-center" disabled selected>-- Select Framework/Programming --</option>
                 <option value="nodejs" selected>Node.js</option>
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
             </select>
         </div>
-        <div class="btn btn-primary" onclick="connMysql()">Button</div>
-        <div class="btn btn-primary">Button</div>
-        <div class="btn btn-primary">Button</div>
-        <div class="btn btn-primary">Button</div>
-        <div class="btn btn-primary">Button</div>
+        <div class="btn btn-primary me-2" id="btnExportBaseClass">Base Class</div>
+        <div class="btn btn-primary me-2" id="btnExportConnectionDB">Connection DB</div>
+        <div class="btn btn-primary me-2" id="btnExportVO_EXE">VO/EXE Class</div>
     </div>
     <div class="box-shadow4 mb-2 m-1 rounded-2 p-2 d-flex justify-content-center" id="pnlContent">
         <div class="tb-content">
@@ -157,12 +152,14 @@
     </div>
     <footer>
         <span class="me-2" id="txtFooter">
-            Developed by Adisorn Vongrod
+            Developed by <%=developer%>
         </span>
     </footer>
 
 </body>
 
-
+<script src="js/helper.js"></script>
+<script src="js/connect_db.js"></script>
+<script src="js/export_file.js"></script>
 
 </html>

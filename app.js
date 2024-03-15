@@ -8,7 +8,9 @@ const session = require('express-session')
 const app = express()
 app.use(cors())
 const fs = require("fs")
-const myRouter = require('./routers/connectDB_router')
+const connectDB_router = require('./routers/connectDB_router')
+const exportFile_router = require('./routers/exportFile_router')
+const view_router = require('./routers/view_router')
 // const userRouter = require('./routers/userAPI')
 
 // app.use(cookieParser());
@@ -26,7 +28,7 @@ app.use(session({
     cookie: { secure: false, expires: 60000 }
 }))
 // user router
-app.use(myRouter)
+app.use(view_router,connectDB_router,exportFile_router)
 // app.use(user)
 app.use(express.static(path.join(__dirname, 'node_modules')))
 app.use(express.static(path.join(__dirname, 'public')))

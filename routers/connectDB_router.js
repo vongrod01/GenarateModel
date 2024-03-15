@@ -3,9 +3,7 @@ const router = express.Router()
 const connMysql = require('../my_modules/mysql.js')
 
 
-router.get('/genmodel', (req, res) => {
-    res.render('index.ejs', { data: 'test' })
-})
+
 
 
 router.get('/databaseList',async (req, res) => {
@@ -73,15 +71,15 @@ router.get('/tableList',async (req, res) => {
         res.json([])
     }
 })
-router.get('/tableDescription',async (req, res) => {
-    let req_json = JSON.parse(req.query.req_json)
-    let provider = req_json.provider;
-    let databaseName = req_json.databaseName;
-    let user = req_json.user;
-    let password = req_json.password;
-    let host = req_json.host;
-    let port = req_json.port;
-    let tbName = req_json.tbName;
+
+async function TableDescription(connDetail){
+    let provider = connDetail.provider;
+    let databaseName = connDetail.databaseName;
+    let user = connDetail.user;
+    let password = connDetail.password;
+    let host = connDetail.host;
+    let port = connDetail.port;
+    let tbName = connDetail.tbName;
     
 
     if(provider === 'mysql'){
@@ -154,17 +152,25 @@ USE information_schema;
                 "port": port
             })
             await mysql.execSQL(sqlStr)
-            res.json(mysql.dataSet) 
+            return mysql.dataSet
+           
         } catch (error) {
             console.log(error)
-            res.json([]) 
+            return []
         }
 
     }
     else{
-        res.json([])
+        return []
     }
+}
+
+router.get('/tableDescription',async (req, res) => {
+    let req_json = JSON.parse(req.query.req_json)
+    let dataRes = await TableDescription(req_json)
+    res.json(dataRes)
 })
 
 
 module.exports = router
+module.exports.TableDescription = TableDescription

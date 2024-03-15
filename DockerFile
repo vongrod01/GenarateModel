@@ -1,25 +1,21 @@
-# Use the official Node.js image as parent image
-FROM node:10.15-slim
+FROM node:16
+# RUN mkdir -p /app
+WORKDIR /usr/app
 
-# Set the working directory. If it doesn't exists, it'll be created
-WORKDIR /app
+RUN npm install nodemon -g
 
-# Define the env variable `PORT`
-ENV PORT 3000
-
-# Expose the port 3000
-EXPOSE ${PORT}
-
-# Copy the file `package.json` from current folder
-# inside our image in the folder `/app`
-COPY ./package.json /app/package.json
-
-# Install the dependencies
+COPY package*.json ./
 RUN npm install
+COPY . /usr/app/.
+EXPOSE 3000
+CMD ["nodemon", "app.js"]
 
-# Copy all files from current folder
-# inside our image in the folder `/app`
-COPY . /app
 
-# Start the app
-ENTRYPOINT ["npm", "start"]
+# FROM node:boron
+# RUN mkdir -p /usr/src/app
+# WORKDIR /usr/src/app
+# COPY package.json /usr/src/app/
+# RUN npm install
+# COPY . /usr/src/app
+# EXPOSE 3000
+# CMD ["npm","start"]

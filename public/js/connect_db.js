@@ -18,6 +18,7 @@ let objConnectDesciption = {
 
 
 async function connectDB() {
+
     objConnectDesciption.connectionDB.provider =  document.getElementById('selDatabaseProvider').value
     objConnectDesciption.connectionDB.host =  document.getElementById('edtHost').value
     objConnectDesciption.connectionDB.port =  document.getElementById('edtPort').value
@@ -33,6 +34,7 @@ async function connectDB() {
             </tr>`
         });
         tbody.innerHTML = innerHTML
+        tbody.querySelector('tr').click()
     })
 }
 
@@ -45,14 +47,6 @@ async function getTableList(el) {
     let databaseName = el.querySelector('td').innerHTML
     let dataReq = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
     dataReq.databaseName = databaseName
-    // let dataReq = {
-    //     provider: document.getElementById('selDatabaseProvider').value,
-    //     host: document.getElementById('edtHost').value,
-    //     port: document.getElementById('edtPort').value,
-    //     user: document.getElementById('edtUser').value,
-    //     password: document.getElementById('edtPassword').value,
-    //     databaseName: databaseName
-    // }
     reqAndRes('/tableList', 'GET', dataReq, (dataRes) => {
 
         let tbody = document.querySelector('#tbTableList tbody')
@@ -63,13 +57,14 @@ async function getTableList(el) {
             <tr onclick = "getTableDescription(this)"> 
                 <td>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" value="" id="chkSelect${tbName.TableName}">
+                        <input class="form-check-input" type="checkbox" value="${tbName.TableName}" id="chkSelect${tbName.TableName}">
                     </div>
                 </td>
                 <td>${tbName.TableName}</td>
             </tr>`
         });
         tbody.innerHTML = innerHTML
+        tbody.querySelector('tr').click()
     })
 }
 
@@ -81,15 +76,10 @@ async function getTableDescription(el) {
     el.classList.add('selected')
     let tbName = el.querySelector('td:nth-child(2)').innerHTML
     let databaseName = document.querySelector('#tbDatabaseList tbody tr.selected td').innerHTML
-    let dataReq = {
-        provider: document.getElementById('selDatabaseProvider').value,
-        host: document.getElementById('edtHost').value,
-        port: document.getElementById('edtPort').value,
-        user: document.getElementById('edtUser').value,
-        password: document.getElementById('edtPassword').value,
-        databaseName: databaseName,
-        tbName: tbName,
-    }
+    let dataReq = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
+    dataReq.databaseName = databaseName
+    dataReq.tbName = tbName
+    
     reqAndRes('/tableDescription', 'GET', dataReq, (dataRes) => {
         let tbody = document.querySelector('#tbTableDesciption tbody')
         tbody.innerHTML = ''
@@ -105,6 +95,7 @@ async function getTableDescription(el) {
             </tr>`
         });
         tbody.innerHTML = innerHTML
+
     })
 }
 
