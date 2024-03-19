@@ -27,6 +27,7 @@ async function connectDB() {
     reqAndRes('/databaseList', 'GET', objConnectDesciption.connectionDB, (dataRes) => {
         let tbody = document.querySelector('#tbDatabaseList tbody')
         tbody.innerHTML = ''
+        
         let innerHTML = ''
         dataRes.forEach(dbName => {
             innerHTML += `<tr onclick = "getTableList(this)"> 
@@ -51,6 +52,7 @@ async function getTableList(el) {
 
         let tbody = document.querySelector('#tbTableList tbody')
         tbody.innerHTML = ''
+        document.getElementById('chkSelectAll').checked = false
         let innerHTML = ''
         dataRes.forEach(tbName => {
             innerHTML += `
