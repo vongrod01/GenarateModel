@@ -49,7 +49,11 @@ const serverHost = systemConfig.server.host
 
 
 
-app.listen(port, serverHost, () => {
-    console.log(`start server in port ${port}, host name ${serverHost}`)
+// app.listen(port, serverHost, () => {
+//     console.log(`start server in port ${port}, host name ${serverHost}`)
+
+// })
+app.listen(port,() => {
+    console.log(`start server port ${port}`)
 
 })

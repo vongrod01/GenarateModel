@@ -9,12 +9,21 @@ class MysqlConnection {
         try {
             connDetail.insecureAuth = true
             connDetail.multipleStatements = true
-
+            connDetail.localAddress = connDetail.host
+            console.log('connDetail : ',connDetail)
             conn = mysql.createConnection(connDetail);
+            conn.connect(function (err) {
+                if (err) {
+                    console.log(err)
+                } else {
+
+                    console.log(`[${connDetail.host}.${connDetail.database}] Connected!`);
+                }
+            });
+
             this.query = util.promisify(conn.query).bind(conn)
-            console.log(`connection [${connDetail.host}.${connDetail.database}] complete`)
         } catch (error) {
-            console.log('connection fial : ', error)
+            console.log('connection error : ', error)
         }
     }
 
@@ -22,10 +31,10 @@ class MysqlConnection {
         return this._dataSet
     }
     set dataSet(value) {
-        if(typeof value === 'undefined'){
+        if (typeof value === 'undefined') {
             this._dataSet = []
         }
-        else{
+        else {
             this._dataSet = value
         }
     }
@@ -34,10 +43,10 @@ class MysqlConnection {
         return this._paramsOut
     }
     set paramsOut(value) {
-        if(typeof value === 'undefined'){
+        if (typeof value === 'undefined') {
             this._paramsOut = []
         }
-        else{
+        else {
             this._paramsOut = value
         }
     }
@@ -69,12 +78,12 @@ class MysqlConnection {
             let callSpScript = `call ${spName}(`
             let setVar = ''
             let outParams = 'select '
-            if(params.length > 0){
+            if (params.length > 0) {
 
                 for (let i = 0; i < params.length; i++) {
                     setVar += `set @param${i + 1} = ${valType(params[i])};`
                     if (i !== params.length - 1) {
-    
+
                         outParams += `@param${i + 1} as Param${i + 1},`
                         callSpScript += `@param${i + 1},`
                     }
@@ -82,23 +91,23 @@ class MysqlConnection {
                         outParams += `@param${i + 1} as Param${i + 1};`
                         callSpScript += `@param${i + 1});`
                     }
-    
+
                 }
             }
-            else{
+            else {
                 outParams = ''
                 callSpScript = `call ${spName}();`
             }
 
 
             let data = await this.query(setVar + callSpScript + outParams)
-            if(typeof data[params.length][0] === 'undefined'){
+            if (typeof data[params.length][0] === 'undefined') {
                 this.dataSet = []
             }
-            else{
+            else {
                 this.dataSet = data[params.length]
             }
-            this.paramsOut = data[params.length+1][0]
+            this.paramsOut = data[params.length + 1][0]
         } catch (error) {
             console.log(error)
         }
