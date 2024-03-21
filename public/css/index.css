@@ -5,8 +5,8 @@
   --h-export: 50px;
   --h-content: calc(100vh - var(--h-header) - var(--h-footer) - var(--h-select) - var(--h-export) - 32px);
 
-  --theme-color: #000;
-  --theme-font-color: #fff;
+  --theme-color: #777a8f;
+  --theme-font-color: #ffffff;
 
 }
 
@@ -15,7 +15,7 @@ body{
 }
 #pnlSelect {
   height: var(--h-select);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(2px);
 }
 
 #pnlExport {
@@ -24,7 +24,7 @@ body{
 
 #pnlContent {
   height: var(--h-content);
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(2px);
   /* background-color: bisque; */
   /* background-image: url(../img/bg.jpg); */
 }
@@ -39,8 +39,8 @@ header {
 
 header span {
   align-self: center;
-  color: var(--theme-font-color);
-  -webkit-text-stroke: 1px black;
+  color: #fff;
+  -webkit-text-stroke: 0.5px #000;
   font-weight: 900;
   font-size: xx-large;
   text-align: center;
@@ -56,8 +56,9 @@ footer {
 
 footer span {
   align-self: center;
-  color: var(--theme-font-color);
-  -webkit-text-stroke: 0.5px black;
+  background-color: rgba(0,0,0,0.6);
+  color: #fff;
+  /* -webkit-text-stroke: 0.5px #000; */
   font-weight: 400;
   font-size: small;
   text-align: center;
