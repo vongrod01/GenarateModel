@@ -10,7 +10,7 @@ class MysqlConnection {
             connDetail.insecureAuth = true
             connDetail.multipleStatements = true
             connDetail.localAddress = connDetail.host
-            console.log('connDetail : ',connDetail)
+            // console.log('connDetail : ',connDetail)
             conn = mysql.createConnection(connDetail);
             conn.connect(function (err) {
                 if (err) {

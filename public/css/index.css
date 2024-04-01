@@ -24,7 +24,7 @@ body{
 
 #pnlContent {
   height: var(--h-content);
-  backdrop-filter: blur(2px);
+  /* backdrop-filter: blur(2px); */
   /* background-color: bisque; */
   /* background-image: url(../img/bg.jpg); */
 }
@@ -65,21 +65,38 @@ footer span {
 }
 
 table {
+
   border-collapse: separate;
   border-spacing: 0 !important;
+  margin-top: 0 !important;
 }
+
+
 
 .tb-content {
   height: calc(var(--h-content) - 15px);
   box-sizing: border-box;
   -webkit-box-sizing: border-box;
   overflow: auto;
-
+  
 }
 
+.tb-content tbody tr td{
+  backdrop-filter: blur(5px);
+  background: transparent !important;
+  color: #fff !important;
+}
+.tb-content tbody{
+  z-index: 0 !important;
+}
+.tb-content thead{
+  z-index: 1 !important;
+}
+
+
 tbody tr.selected td {
-  background-color: #A9A9A9 !important;
-  color: #000;
+  background-color: #fff !important;
+  color: #000 !important;
   font-weight: bold;
 }
 
