@@ -37,7 +37,7 @@ class BaseVO {
         let newData = {}
         for (var key in jsonData) {
             let newKey = key[0] === '_' ? key.slice(1, key.length) : key
-            newData[newKey] = jsonData[Key]
+            newData[newKey] = jsonData[key]
         }
         return newData
     }
