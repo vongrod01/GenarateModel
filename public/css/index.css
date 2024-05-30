@@ -15,7 +15,7 @@ body{
 }
 #pnlSelect {
   height: var(--h-select);
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(10px);
 }
 
 #pnlExport {
@@ -24,7 +24,7 @@ body{
 
 #pnlContent {
   height: var(--h-content);
-  /* backdrop-filter: blur(2px); */
+  backdrop-filter: blur(10px);
   /* background-color: bisque; */
   /* background-image: url(../img/bg.jpg); */
 }

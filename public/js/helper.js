@@ -92,7 +92,9 @@ async function reqAndRes(url, reqMethod, reqData, callBackSuccess, callBackError
             }
         }
 
-        urlNew = `${url}?req_json=${encodeURIComponent(JSON.stringify(reqData))}`
+        let  queryString = $.param(reqData)
+        // urlNew = `${url}?req_json=${encodeURIComponent(JSON.stringify(reqData))}`
+        urlNew = `${url}?${queryString}`
         // console.log(urlNew)
     }
     else {

@@ -1,13 +1,10 @@
 const express = require('express')
 const router = express.Router()
 const connMysql = require('../my_modules/mysql.js')
+const connMssql = require('../my_modules/mssql.js')
 
-
-
-
-
-router.get('/databaseList',async (req, res) => {
-    let req_json = JSON.parse(req.query.req_json)
+router.get('/databaseList', async (req, res) => {
+    let req_json = req.query
 
     let provider = req_json.provider;
     let user = req_json.user;
@@ -15,10 +12,10 @@ router.get('/databaseList',async (req, res) => {
     let host = req_json.host;
     let port = req_json.port;
 
-    if(provider === 'mysql'){
-        port = ['undefined',0,''].includes(port)?3306:port
+    if (provider === 'mysql') {
+        port = ['undefined', 0, ''].includes(port) ? 3306 : port
         try {
-            
+
             let mysql = new connMysql.MysqlConnection({
                 // "database": databaseName,
                 "user": user,
@@ -27,20 +24,33 @@ router.get('/databaseList',async (req, res) => {
                 "port": port
             })
             await mysql.execSQL('SHOW DATABASES')
-            res.json(mysql.dataSet) 
+            res.json(mysql.dataSet)
         } catch (error) {
             console.log(error)
-            res.json([]) 
+            res.json([])
         }
 
     }
-    else{
+    else if (provider === 'mssql') {
+        let config = {
+            user: user,
+            password: password,
+            server: host,
+            options: {
+                encrypt: false // Disable encryption
+            }
+        }
+        let mssql = new connMssql.MssqlConnection(config)
+        await mssql.execSQL('SELECT name as [Database] FROM master.dbo.sysdatabases')
+        res.json(mssql.dataSet)
+    }
+    else {
         res.json([])
     }
 })
 
-router.get('/tableList',async (req, res) => {
-    let req_json = JSON.parse(req.query.req_json)
+router.get('/tableList', async (req, res) => {
+    let req_json = req.query
     let provider = req_json.provider;
     let databaseName = req_json.databaseName;
     let user = req_json.user;
@@ -48,10 +58,10 @@ router.get('/tableList',async (req, res) => {
     let host = req_json.host;
     let port = req_json.port;
 
-    if(provider === 'mysql'){
-        port = ['undefined',0,''].includes(port)?3306:port
+    if (provider === 'mysql') {
+        port = ['undefined', 0, ''].includes(port) ? 3306 : port
         try {
-            
+
             let mysql = new connMysql.MysqlConnection({
                 "database": databaseName,
                 "user": user,
@@ -60,19 +70,19 @@ router.get('/tableList',async (req, res) => {
                 "port": port
             })
             await mysql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${databaseName}'`)
-            res.json(mysql.dataSet) 
+            res.json(mysql.dataSet)
         } catch (error) {
             console.log(error)
-            res.json([]) 
+            res.json([])
         }
 
     }
-    else{
+    else {
         res.json([])
     }
 })
 
-async function TableDescription(connDetail){
+async function TableDescription(connDetail) {
     let provider = connDetail.provider;
     let databaseName = connDetail.databaseName;
     let user = connDetail.user;
@@ -80,9 +90,9 @@ async function TableDescription(connDetail){
     let host = connDetail.host;
     let port = connDetail.port;
     let tbName = connDetail.tbName;
-    
 
-    if(provider === 'mysql'){
+
+    if (provider === 'mysql') {
         let sqlStr = `
 
 USE information_schema;
@@ -141,9 +151,9 @@ USE information_schema;
     ORDER BY                                                         
       COLUMNS.ORDINAL_POSITION
     `
-        port = ['undefined',0,''].includes(port)?3306:port
+        port = ['undefined', 0, ''].includes(port) ? 3306 : port
         try {
-            
+
             let mysql = new connMysql.MysqlConnection({
                 "database": databaseName,
                 "user": user,
@@ -153,20 +163,20 @@ USE information_schema;
             })
             await mysql.execSQL(sqlStr)
             return mysql.dataSet
-           
+
         } catch (error) {
             console.log(error)
             return []
         }
 
     }
-    else{
+    else {
         return []
     }
 }
 
-router.get('/tableDescription',async (req, res) => {
-    let req_json = JSON.parse(req.query.req_json)
+router.get('/tableDescription', async (req, res) => {
+    let req_json = req.query
     let dataRes = await TableDescription(req_json)
     res.json(dataRes)
 })

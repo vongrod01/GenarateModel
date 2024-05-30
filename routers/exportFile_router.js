@@ -4,7 +4,7 @@ const connectDB_router = require('./connectDB_router')
 const be_export_file = require('../my_modules/be_export_file')
 
 router.get('/contentBase', async (req, res) => {
-    let req_json = JSON.parse(req.query.req_json)
+    let req_json = req.query
     let programming = req_json.programming;
     let provider = req_json.provider;
     res.json(be_export_file.baseVO_EXE(programming,provider))
@@ -14,7 +14,7 @@ router.get('/contentBase', async (req, res) => {
 
 router.get('/contentVO_EXE', async (req, res) => {
 
-    let req_json = JSON.parse(req.query.req_json)
+    let req_json = req.query
     console.log(req_json)
     dataDescription = await connectDB_router.TableDescription(req_json)
     dataDescription.tbName = req_json.tbName
