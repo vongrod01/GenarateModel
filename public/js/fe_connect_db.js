@@ -86,7 +86,14 @@ async function getTableDescription(el) {
         let tbody = document.querySelector('#tbTableDesciption tbody')
         tbody.innerHTML = ''
         let innerHTML = ''
-        dataRes[1].forEach(desciption => {
+        let dataSet = []
+        if(dataReq.provider === 'mysql'){
+            dataSet = dataRes[1]
+        }
+        else if(dataReq.provider === 'mssql'){
+            dataSet = dataRes
+        }
+        dataSet.forEach(desciption => {
             innerHTML += `
             <tr> 
                

@@ -16,8 +16,13 @@ router.get('/contentVO_EXE', async (req, res) => {
 
     let req_json = req.query
     console.log(req_json)
-    dataDescription = await connectDB_router.TableDescription(req_json)
-    dataDescription.tbName = req_json.tbName
+    let dataDescription = {
+        dataSet : await connectDB_router.TableDescription(req_json),
+        tbName : req_json.tbName
+    }
+    
+    
+    // dataDescription.tbName = req_json.tbName
     if(req_json.programming === 'nodejs'){
 
         res.json(be_export_file.nodejsVO_EXE(dataDescription))
@@ -25,6 +30,10 @@ router.get('/contentVO_EXE', async (req, res) => {
     else if(req_json.programming === 'python'){
 
         res.json(be_export_file.pythonVO_EXE(dataDescription))
+    }
+    else if(req_json.programming === 'codeigniter4'){
+
+        res.json(be_export_file.codeigniterVO_EXE(dataDescription))
     }
     else{
         res.json({

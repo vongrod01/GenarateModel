@@ -6,7 +6,7 @@ const fs = require("fs")
 let systemConfig = JSON.parse(fs.readFileSync('SystemConfig.json', 'utf-8'))
 
 function baseVO_EXE(programming, provider) {
-    let content = ''
+    let content = '';
     if (programming === 'nodejs') {
         let importDB = ''
         if (provider === 'mysql') {
@@ -16,67 +16,67 @@ function baseVO_EXE(programming, provider) {
 
         }
         content = `/*\n${header()}*/
-${importDB}
-class BaseVO {
-    constructor() {
+        ${importDB}
+        class BaseVO {
+            constructor() {
 
-    }
-    assignTo(destination) {
-        let jsonData = JSON.parse(JSON.stringify(this))
-        for (var key in jsonData) {
-            if (destination[key] !== undefined) {
-                destination[key] = jsonData[key]
             }
-            else {
-                console.log('This destination.attribute(' + key + ') does not exist in ' + this.constructor.name + '.')
-            }
-        }
-    }
-    toJson() {
-        let jsonData = JSON.parse(JSON.stringify(this))
-        let newData = {}
-        for (var key in jsonData) {
-            let newKey = key[0] === '_' ? key.slice(1, key.length) : key
-            newData[newKey] = jsonData[key]
-        }
-        return newData
-    }
-    jsonAssignToAttr(jsonData) {
-        if (typeof jsonData === 'object') {
-            for (var key in jsonData) {
-                if (this[key] !== undefined) {
-                    this[key] = jsonData[key]
-                }
-                else {
-                    console.log('This attribute(' + key + ') does not exist in ' + this.constructor.name + '.')
+            assignTo(destination) {
+                let jsonData = JSON.parse(JSON.stringify(this))
+                for (var key in jsonData) {
+                    if (destination[key] !== undefined) {
+                        destination[key] = jsonData[key]
+                    }
+                    else {
+                        console.log('This destination.attribute(' + key + ') does not exist in ' + this.constructor.name + '.')
+                    }
                 }
             }
+            toJson() {
+                let jsonData = JSON.parse(JSON.stringify(this))
+                let newData = {}
+                for (var key in jsonData) {
+                    let newKey = key[0] === '_' ? key.slice(1, key.length) : key
+                    newData[newKey] = jsonData[key]
+                }
+                return newData
+            }
+            jsonAssignToAttr(jsonData) {
+                if (typeof jsonData === 'object') {
+                    for (var key in jsonData) {
+                        if (this[key] !== undefined) {
+                            this[key] = jsonData[key]
+                        }
+                        else {
+                            console.log('This attribute(' + key + ') does not exist in ' + this.constructor.name + '.')
+                        }
+                    }
+                }
+            }
         }
-    }
-}
-class BaseEXE extends mysql.MysqlConnection {
-    constructor(connDetail) {
-        super(connDetail)
-    }
-    logErrorExec(err) {
-        let dividingLine = ''
-        for (let index = 0; index < dividingLine.length; index++) {
-            dividingLine += '-'
+        class BaseEXE extends mysql.MysqlConnection {
+            constructor(connDetail) {
+                super(connDetail)
+            }
+            logErrorExec(err) {
+                let dividingLine = ''
+                for (let index = 0; index < dividingLine.length; index++) {
+                    dividingLine += '-'
 
+                }
+                console.log(dividingLine)
+                console.log(err)
+                console.log(dividingLine)
+            }
         }
-        console.log(dividingLine)
-        console.log(err)
-        console.log(dividingLine)
-    }
-}
 
 
-module.exports.BaseVO = BaseVO
-module.exports.BaseEXE = BaseEXE
-        
-    `
+        module.exports.BaseVO = BaseVO
+        module.exports.BaseEXE = BaseEXE
+                
+            `
         return {
-            export:true,
+            export: true,
             content: content,
             fileName: 'BaseClass.js'
         }
@@ -90,51 +90,161 @@ module.exports.BaseEXE = BaseEXE
 
         }
         content = `${header()}
-${importDB}
-class BaseVO():
-    def to_dict(self):
-        return {key.replace(f'_{type(self).__name__}__', ''): value for key, value in self.__dict__.items() if
-            not key.startswith('__') and not callable(key)}
-    def dict_to_props(self, data_dict):
-        if type(data_dict) == dict:
-            for key in data_dict:
-                try:
-                    getattr(self, key) #Check Key have in props obj
-                    setattr(self, key, data_dict[key])
-                except Exception as e:
-                    print(f'''Didn't find key : "{key}" in Object[{type(self).__name__}]''')
-            else:
-                print('*********** This data is not of type dict. ***********')
+        ${importDB}
+        class BaseVO():
+            def to_dict(self):
+                return {key.replace(f'_{type(self).__name__}__', ''): value for key, value in self.__dict__.items() if
+                    not key.startswith('__') and not callable(key)}
+            def dict_to_props(self, data_dict):
+                if type(data_dict) == dict:
+                    for key in data_dict:
+                        try:
+                            getattr(self, key) #Check Key have in props obj
+                            setattr(self, key, data_dict[key])
+                        except Exception as e:
+                            print(f'''Didn't find key : "{key}" in Object[{type(self).__name__}]''')
+                    else:
+                        print('*********** This data is not of type dict. ***********')
 
-    def assign_to(self, destination):
-        if(type(self) == type(destination)):
-            
-            destination.dict_to_props(self.to_dict())
-        else:
-            print('type not map')
+            def assign_to(self, destination):
+                if(type(self) == type(destination)):
+                    
+                    destination.dict_to_props(self.to_dict())
+                else:
+                    print('type not map')
 
-class BaseEXE(ConnectMySQL):
-    def __init__(self, config_connection):
-        super(BaseEXE, self).__init__(config_connection)
+        class BaseEXE(ConnectMySQL):
+            def __init__(self, config_connection):
+                super(BaseEXE, self).__init__(config_connection)
 
-    def err_exe(self, err_str):
-        dividing_line = ''
-        for i in err_str:
-            dividing_line += '-'
-        print(dividing_line)
-        print(err_str)
-        print(dividing_line)
-    `
+            def err_exe(self, err_str):
+                dividing_line = ''
+                for i in err_str:
+                    dividing_line += '-'
+                print(dividing_line)
+                print(err_str)
+                print(dividing_line)
+            `
         return {
-            export:true,
+            export: true,
             content: content,
             fileName: 'BaseClass.py'
         }
     }
+    else if (programming === 'codeigniter4') {
+        let result = {
+            ecport : true,
+            content : [],
+            fileName : []
+        }
+        let importDB = ''
+        if (provider === 'mssql') {
+            // importDB = `from .ConnectionMySQL import ConnectMySQL`
+        }
+        else {
+
+        }
+        result.content.push(`<?php namespace App\\My_Models;
+/*\n${header()}*/
+${importDB}
+
+abstract class BaseVO
+{
+    protected  $props = []; // ประกาศ protected property เพื่อไม่ให้ถูกใช้งานผ่าน object instant 
+
+    public function assignTo($destination)
+    {
+        foreach ($this->props as $key => $value) {
+            // เช็คว่ามี Key ที่ปลายทางหรือไม่
+            if (array_key_exists($key, $destination->props)) {
+                
+                $destination->$key = $value;
+            } else {
+                // echo "Key does not exist!";
+                
+            }
+        }
+    }
+
+    public function getProps()
+    {
+        return $this->props;
+    }
+
+    public function dataAssignToProps($arr)
+    {
+        foreach ($arr as $key => $value) {
+            // เช็คว่ามี Key ที่ปลายทางหรือไม่
+            if (array_key_exists($key, $this->props)) {
+                
+                $this->$key = $value;
+            } else {
+                // echo "Key does not exist!";
+                
+            }
+        }
+    }
+   
+}
+    `)
+
+    result.fileName.push(`BaseVO.php`)
+
+    result.content.push(`<?php namespace App\\My_Models;     
+/*\n${header()}*/
+${importDB}
+
+abstract class BaseEXE{
+    public $db;
+    public $data_set = [];
+    function __construct($conn_group = null){
+        // echo "$conn_group";
+        if($conn_group != null){
+            $this->db = \\Config\\Database::connect($conn_group);
+        }
+        else{
+            $this->db = \\Config\\Database::connect('default');
+        }
+    }
+
+    public function call_sp($name,$params){
+        $params_map = implode(",",array_map(function ($val) {
+            return "?";
+        }, $params)); 
+        $cmd = "exec $name $params_map;";
+        try {
+            $this->data_set = $this->db->query($cmd, $params)->getResult();
+            return $this->data_set;
+        } catch (\\Throwable $th) {
+            $this->data_set = [];
+            return null;
+        }
+    }
+
+    public function query($cmd){
+       
+        try {
+            $this->data_set = $this->db->query($cmd)->getResult();
+            return $this->data_set;
+        } catch (\\Throwable $th) {
+            $this->data_set = [];
+            return null;
+        }
+    }
+    
+}
+    `)
+
+    result.fileName.push(`BaseEXE.php`)
+
+
+
+    return result
+    }
     else {
         return {
-            export:false
-            
+            export: false
+
         }
     }
 
@@ -169,6 +279,7 @@ function header() {
 }
 
 function nodejsVO_EXE(dataDescription) {
+    // console.table(dataDescription)
     let classVO = ``
     let classEXE = ``
     let className = ''
@@ -188,7 +299,7 @@ function nodejsVO_EXE(dataDescription) {
         this.result = new ${className}VO()
     }`
 
-    dataDescription[1].forEach(field => {
+    dataDescription.dataSet.forEach(field => {
         let initValue
         if (['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)) {
             initValue = 0
@@ -336,7 +447,7 @@ function pythonVO_EXE(dataDescription) {
         self.result = ${className}VO()
         `
 
-    dataDescription[1].forEach(field => {
+    dataDescription.dataSet.forEach(field => {
         let initValue
         if (['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)) {
             initValue = 0
@@ -444,6 +555,197 @@ import datetime
     }
 }
 
+function codeigniterVO_EXE(dataDescription) {
+    // console.table(dataDescription)
+
+    let tbFullName = `${dataDescription.databaseName}.dbo.${dataDescription.tbName}`
+    let className = ''
+    dataDescription.tbName.split('_').forEach(str => {
+        // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
+        str.charAt(0).toUpperCase() + str.slice(1);
+        className += str.charAt(0).toUpperCase() + str.slice(1)
+    });
+    let result = {
+        export : true,
+        content : [],
+        fileName : []
+    }
+    let content = '';
+    let getterVO = `
+    public function __get($prop_name)
+    {
+        switch ($prop_name) {
+    `
+    let setterVO = `
+    public function __set($prop_name, $value)
+    {
+        switch ($prop_name) {
+    `
+    let paramsListEXE = ''
+    let constructorVO = `
+    function __construct($objVO = null)
+    {
+    `
+    // Construct
+    dataDescription.dataSet.forEach(field => {
+        let initValue
+        if (['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)) {
+            initValue = '0;'
+        }
+        else if (['date', 'datetime'].includes(field.FieldType)) {
+            initValue = 'date("Y-m-d H:i:s");'
+        }
+        else {
+            initValue = '"";'
+        }
+        constructorVO += `  $this->${field.FieldName} = ${initValue}
+        `
+
+        getterVO +=`
+            case '${field.FieldName}':
+                return $this->props[$prop_name];
+                break;`
+        setterVO +=`
+            case 'ID':
+                $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)?'(int)':''}$value;
+                break;`
+        
+      
+        paramsListEXE += `          $DataVO->${field.FieldName},
+    `
+    });
+
+    constructorVO += `
+    }
+    
+    `
+    getterVO += `
+            default:
+                return null;
+                break;
+        }
+    }
+    `
+    setterVO += `
+            default:
+                $this->props[$prop_name] = $value;
+                break;
+        }
+    }
+    `
+    content = `<?php namespace App\\My_Models;
+/*\n${header()}*/
+
+use App\\My_Models\\BaseVO;
+
+class ${className}VO extends BaseVO
+{
+${constructorVO}
+${getterVO}
+${setterVO}
+}
+    `
+    result.content.push(content)
+    result.fileName.push(`${className}VO.php`)
+    // จบ VO
+    // -----------------------------------------------------------
+
+
+    let constructorEXE = `
+    public $_result;
+    function __construct($conn_group = null)
+    {
+        parent::__construct($conn_group);
+        $this->_result = new ${className}VO();
+    }
+        
+    `
+
+    let methodEXE = `
+    public function _Get($ID)
+    {
+        try {
+            $this->call_sp('${tbFullName}_get', [$ID]);
+            if (count($this->data_set) > 0) {
+                $this->_result->dataAssignToProps($this->data_set[0]);
+                return $this->_result;
+            } else {
+                return null;
+            }
+        } catch (\Throwable $th) {
+            return null;
+        }
+    }
+
+    public function _Search($DataVO)
+    {
+        $params = [
+            ${paramsListEXE}
+        ];
+        return $this->call_sp('${tbFullName}_search', $params);
+    }
+
+    public function _Add($DataVO)
+    {
+        $params = [
+            ${paramsListEXE}
+        ];
+        $result = $this->call_sp('${tbFullName}_add', $params);
+        if ($result != null and count($result) > 0) {
+            $ID = $result[0]->ID;
+            return $this->_Get($ID);
+        } else {
+            return null;
+        }
+    }
+
+    public function _Edit($DataVO)
+    {
+        $params = [
+            ${paramsListEXE}
+        ];
+        $this->call_sp('${tbFullName}_edit', $params);
+        return $this->_Get($DataVO->ID);
+    }
+    
+    public function _Delete($ID) {
+        try {
+            $this->call_sp('${tbFullName}_delete', [$ID]);
+            if($this->_Get($ID) === null){
+                return true;
+            }
+            else{
+                return false;
+            }
+           
+        } catch (\Throwable $th) {
+            return false;
+        }
+    }
+     
+     `
+    content = `<?php namespace App\\My_Models;
+/*\n${header()}*/
+
+use App\\My_Models\\BaseEXE;
+use App\\My_Models\\${className}EXE;
+
+class ${className}EXE extends BaseEXE
+{
+    ${constructorEXE}
+    ${methodEXE}
+}
+    `
+    result.content.push(content)
+    result.fileName.push(`${className}EXE.php`)
+    // จบ EXE
+    // -----------------------------------------------------------
+
+    
+    return result
+}
+
 module.exports.baseVO_EXE = baseVO_EXE
 module.exports.nodejsVO_EXE = nodejsVO_EXE
 module.exports.pythonVO_EXE = pythonVO_EXE
+module.exports.codeigniterVO_EXE = codeigniterVO_EXE

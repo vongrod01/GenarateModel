@@ -22,8 +22,14 @@ document.getElementById('btnExportBaseClass').onclick = function () {
         programming: document.getElementById('selProgramming').value,
         provider: objConnectDesciption.connectionDB.provider
     },
-        (dataRes) => {
-            downloadFile(dataRes.fileName, dataRes.content)
+        async (dataRes) => {
+            if(Array.isArray(dataRes.content)){
+                for (let i = 0; i < dataRes.content.length; i++) {
+                    await downloadFile(dataRes.fileName[i], dataRes.content[i])   
+                }
+            }else{
+                await downloadFile(dataRes.fileName, dataRes.content)  
+            }
         }
     )
 }
@@ -53,12 +59,24 @@ async function exportVO_EXE(connDetail) {
 
             await reqAndRes('/contentVO_EXE', 'GET', connDetail, async (dataRes) => {
                 if(dataRes.export){
-                    
-                    downloadFilesList.push(dataRes)
-    
-                    await downloadFile(dataRes.fileName, dataRes.content)
-    
-                    resolve(`export ${dataRes.fileName} succesfuly!`)
+                    if(Array.isArray(dataRes.content)){
+                        for (let i = 0; i < dataRes.content.length; i++) {
+                        
+                            // downloadFilesList.push(dataRes)
+                        
+                            await downloadFile(dataRes.fileName[i], dataRes.content[i])
+                        
+                        }
+                        resolve(`export ${dataRes.fileName[0]} succesfuly!`)
+                    }else{
+
+                        
+                        downloadFilesList.push(dataRes)
+                        
+                        await downloadFile(dataRes.fileName, dataRes.content)
+                        
+                        resolve(`export ${dataRes.fileName} succesfuly!`)
+                    }
                 }
                 else{
                     resolve(`not export!`)

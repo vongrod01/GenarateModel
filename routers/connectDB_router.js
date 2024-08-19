@@ -57,7 +57,6 @@ router.get('/tableList', async (req, res) => {
     let password = req_json.password;
     let host = req_json.host;
     let port = req_json.port;
-
     if (provider === 'mysql') {
         port = ['undefined', 0, ''].includes(port) ? 3306 : port
         try {
@@ -69,8 +68,30 @@ router.get('/tableList', async (req, res) => {
                 "host": host,
                 "port": port
             })
-            await mysql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${databaseName}'`)
-            res.json(mysql.dataSet)
+            await mssql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${databaseName}'`)
+            res.json(mssql.dataSet)
+        } catch (error) {
+            console.log(error)
+            res.json([])
+        }
+
+    }
+    else if (provider === 'mssql') {
+       
+        try {
+            let config = {
+                user: user,
+                password: password,
+                server: host,
+                options: {
+                    encrypt: false // Disable encryption
+                }
+            }
+            let mssql = new connMssql.MssqlConnection(config)
+            await mssql.execSQL(`select distinct TABLE_NAME as TableName from ${databaseName}.INFORMATION_SCHEMA.COLUMNS`)
+            res.json(mssql.dataSet)
+            // await mssql.execSQL(`select distinct TABLE_NAME as TableName from ${databaseName}.INFORMATION_SCHEMA.COLUMNS`)
+            // res.json(mysql.dataSet)
         } catch (error) {
             console.log(error)
             res.json([])
@@ -164,6 +185,43 @@ USE information_schema;
             await mysql.execSQL(sqlStr)
             return mysql.dataSet
 
+        } catch (error) {
+            console.log(error)
+            return []
+        }
+
+    }
+    else if (provider === 'mssql') {
+       
+        try {
+            let config = {
+                user: user,
+                password: password,
+                server: host,
+                options: {
+                    encrypt: false // Disable encryption
+                }
+            }
+            let mssql = new connMssql.MssqlConnection(config)
+            let sqlStr = `
+                select 
+                COLUMN_NAME as FieldName,
+                DATA_TYPE as FieldType,
+                '' as FieldTypeDefine,
+                case when CHARACTER_MAXIMUM_LENGTH is not null then
+                CHARACTER_MAXIMUM_LENGTH
+                when NUMERIC_PRECISION_RADIX is not null then
+                NUMERIC_PRECISION_RADIX
+                else '' end as FieldSize
+
+                from ${databaseName}.INFORMATION_SCHEMA.COLUMNS where  TABLE_NAME = '${tbName}'
+            `
+            // console.log(sqlStr)
+            await mssql.execSQL(sqlStr)
+            // console.table(mssql.dataSet)
+            return mssql.dataSet
+            // await mssql.execSQL(`select distinct TABLE_NAME as TableName from ${databaseName}.INFORMATION_SCHEMA.COLUMNS`)
+            // res.json(mysql.dataSet)
         } catch (error) {
             console.log(error)
             return []
