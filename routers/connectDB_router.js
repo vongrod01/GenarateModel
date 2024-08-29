@@ -192,7 +192,7 @@ USE information_schema;
 
     }
     else if (provider === 'mssql') {
-       
+
         try {
             let config = {
                 user: user,
@@ -210,10 +210,10 @@ USE information_schema;
                 '' as FieldTypeDefine,
                 case when CHARACTER_MAXIMUM_LENGTH is not null then
                 CHARACTER_MAXIMUM_LENGTH
-                when NUMERIC_PRECISION_RADIX is not null then
-                NUMERIC_PRECISION_RADIX
-                else '' end as FieldSize
-
+                when NUMERIC_PRECISION is not null then
+                NUMERIC_PRECISION
+                else '' end as FieldSize,
+                NUMERIC_SCALE as NumericScale
                 from ${databaseName}.INFORMATION_SCHEMA.COLUMNS where  TABLE_NAME = '${tbName}'
             `
             // console.log(sqlStr)

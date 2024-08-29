@@ -4,8 +4,8 @@
         "host":"localhost"
     },
     "description":{
-        "titleHeader":"GENARATE  MODEL",
-        "version":"1.0.0",
+        "titleHeader":"GENARATE  MODEL  VIEW  CONTROLLER",
+        "version":"1.3.2",
         "developer":"Adisorn Vongrod"
     }
 

@@ -157,11 +157,10 @@ abstract class BaseVO
         foreach ($this->props as $key => $value) {
             // เช็คว่ามี Key ที่ปลายทางหรือไม่
             if (array_key_exists($key, $destination->props)) {
-                
                 $destination->$key = $value;
             } else {
-                // echo "Key does not exist!";
-                
+                $className = get_class($destination);
+                error_log("!Warning function assignTo : This key[$key] does not exist in this object[$className].");
             }
         }
     }
@@ -176,11 +175,10 @@ abstract class BaseVO
         foreach ($arr as $key => $value) {
             // เช็คว่ามี Key ที่ปลายทางหรือไม่
             if (array_key_exists($key, $this->props)) {
-                
                 $this->$key = $value;
             } else {
-                // echo "Key does not exist!";
-                
+                $className = get_class($this);
+                error_log("!Warning 'function dataAssignToProps' : This key[$key] does not exist in this object[$className].");
             }
         }
     }
@@ -216,6 +214,8 @@ abstract class BaseEXE{
             $this->data_set = $this->db->query($cmd, $params)->getResult();
             return $this->data_set;
         } catch (\\Throwable $th) {
+            $errors = $this->db->error();
+            $this->log_error_db($errors);
             $this->data_set = [];
             return null;
         }
@@ -227,9 +227,27 @@ abstract class BaseEXE{
             $this->data_set = $this->db->query($cmd)->getResult();
             return $this->data_set;
         } catch (\\Throwable $th) {
+            $errors = $this->db->error();
+            $this->log_error_db($errors);
             $this->data_set = [];
             return null;
         }
+    }
+
+    private function log_error_db($errors)
+    {
+        $message = $errors["message"];
+        $code = $errors["code"];
+        $message_err = "!Throwable Error [$code] : " . $message;
+
+        $line = "";
+        for ($i = 0; $i < strlen($message_err) + 6; $i++) {
+            $line = $line . "-";
+        }
+
+        error_log($line);
+        error_log("|  $message_err  |");
+        error_log($line);
     }
     
 }
@@ -252,7 +270,12 @@ abstract class BaseEXE{
 
 
 function header() {
-    let headerStr = `Generate By Genarate Model : Ver ${systemConfig.description.version} (Developed by ${systemConfig.description.developer})`
+    let dt = new Date();
+    const month = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    dformat = `${dt.getDate()}-${month[dt.getMonth()]}-${dt.getFullYear()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+
+    let genDateStr = `Generate Date : ${dformat}`
+    let headerStr = `Generate By Genarate MVC : Ver ${systemConfig.description.version} (Developed by ${systemConfig.description.developer}) | ${genDateStr}`
     let frame = ``
     for (let i = 1; i <= 5; i++) {
         if (i === 1 || i === 5) {
@@ -556,7 +579,7 @@ import datetime
 }
 
 function codeigniterVO_EXE(dataDescription) {
-    // console.table(dataDescription)
+    console.log('dataDescription.databaseName : ',dataDescription.databaseName)
 
     let tbFullName = `${dataDescription.databaseName}.dbo.${dataDescription.tbName}`
     let className = ''
@@ -581,7 +604,8 @@ function codeigniterVO_EXE(dataDescription) {
     {
         switch ($prop_name) {
     `
-    let paramsListEXE = ''
+    let paramsListEXE = `
+`
     let constructorVO = `
     function __construct($objVO = null)
     {
@@ -606,18 +630,17 @@ function codeigniterVO_EXE(dataDescription) {
                 return $this->props[$prop_name];
                 break;`
         setterVO +=`
-            case 'ID':
+            case '${field.FieldName}':
                 $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)?'(int)':''}$value;
                 break;`
         
       
         paramsListEXE += `          $DataVO->${field.FieldName},
-    `
+`
     });
 
     constructorVO += `
     }
-    
     `
     getterVO += `
             default:
@@ -657,8 +680,7 @@ ${setterVO}
     {
         parent::__construct($conn_group);
         $this->_result = new ${className}VO();
-    }
-        
+    }        
     `
 
     let methodEXE = `
@@ -672,7 +694,7 @@ ${setterVO}
             } else {
                 return null;
             }
-        } catch (\Throwable $th) {
+        } catch (\\Throwable $th) {
             return null;
         }
     }
@@ -718,7 +740,7 @@ ${setterVO}
                 return false;
             }
            
-        } catch (\Throwable $th) {
+        } catch (\\Throwable $th) {
             return false;
         }
     }
@@ -728,7 +750,7 @@ ${setterVO}
 /*\n${header()}*/
 
 use App\\My_Models\\BaseEXE;
-use App\\My_Models\\${className}EXE;
+use App\\My_Models\\${className}VO;
 
 class ${className}EXE extends BaseEXE
 {
@@ -745,7 +767,404 @@ class ${className}EXE extends BaseEXE
     return result
 }
 
+function codeigniterController(dataDescription) {
+    let className = ''
+    dataDescription.tbName.split('_').forEach(str => {
+        // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
+        str.charAt(0).toUpperCase() + str.slice(1);
+        className += str.charAt(0).toUpperCase() + str.slice(1)
+    });
+    let result = {
+        export : true,
+        content : '',
+        fileName : ''
+    }
+    let content = `<?php namespace App\\Controllers;
+/*\n${header()}*/
+
+use CodeIgniter\\RESTful\\ResourceController;
+use App\\My_Models\\${className}VO;
+use App\\My_Models\\${className}EXE;
+
+class ${className}Controller extends ResourceController
+{
+    public function Process()
+    {
+        $method = $this->request->getMethod();
+        $data_req = $this->request->getVar();
+        $ID = (int)$this->request->getVar("ID");
+        $${className}VO = new ${className}VO();
+        $${className}EXE = new ${className}EXE();
+        if ($method == "get" and $ID !== null and $ID !== 0) {
+            // GET
+
+            if ($${className}EXE->_Get($ID) !== null) {
+                $${className}EXE->_result->assignTo($${className}VO);
+                return $this->respond($${className}VO->getProps(), 200);
+            } else {
+                return $this->respond(["Message" => "No Content"], 200);
+            }
+        } elseif ($method == "get") {
+            // SEARCH
+            $${className}VO->dataAssignToProps($data_req);
+            $${className}EXE->_Search($${className}VO);
+            return $this->respond($${className}EXE->data_set, 200);
+        } elseif ($method == "post") {
+            // ADD
+            $${className}VO->dataAssignToProps($data_req);
+            if ($${className}EXE->_Add($${className}VO) !== null) {
+                $${className}EXE->_result->assignTo($${className}VO);
+                return $this->respond($${className}VO->getProps(), 200);
+            } else {
+                return $this->respond(["Message" => "Not Modified"], 200);
+            }
+        } elseif ($method == "put") {
+            // EDIT
+            if ($${className}EXE->_Get($ID) !== null) {
+                $${className}EXE->_result->assignTo($${className}VO);
+                $${className}VO->dataAssignToProps($data_req);
+                if ($${className}EXE->_Edit($${className}VO) !== null) {
+                    $${className}EXE->_result->assignTo($${className}VO);
+                    return $this->respond($${className}VO->getProps(), 200);
+                } else {
+                    return $this->respond(["Message" => "Not Modified"], 200);
+                }
+            } else {
+                return $this->respond(["Message" => "Not Modified"], 200);
+            }
+        } elseif ($method == "delete") {
+            // DELETE
+            if ($${className}EXE->_Delete($ID)) {
+                return $this->respond("Message" => "Successfully deleted data"], 200);
+            } else {
+                return $this->respond(["Message" => "Not Modified"], 200);
+            }
+        }
+    }
+}
+
+    `;
+
+
+    
+  
+    result.content = content;
+    result.fileName = `${className}Controller.php`
+
+    
+    return result
+}
+
+
+function storeProcedure(dataDescription){
+    let result = {
+        export : false,
+        content : '',
+        fileName : ''
+    }
+    // console.log('provider : ',dataDescription.provider)
+    // console.log('databaseName : ',dataDescription.databaseName) 
+    // console.log('tbName : ',dataDescription.tbName) 
+    console.table(dataDescription.dataSet)
+    let spHeader = `USE [${dataDescription.databaseName}]
+GO
+IF OBJECT_ID('${dataDescription.tbName}_add', 'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[${dataDescription.tbName}_add]
+GO
+
+IF OBJECT_ID('${dataDescription.tbName}_delete', 'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[${dataDescription.tbName}_delete]
+GO
+
+IF OBJECT_ID('${dataDescription.tbName}_edit', 'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[${dataDescription.tbName}_edit]
+GO
+
+IF OBJECT_ID('${dataDescription.tbName}_get', 'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[${dataDescription.tbName}_get]
+GO
+
+IF OBJECT_ID('${dataDescription.tbName}_search', 'P') IS NOT NULL
+    DROP PROCEDURE [dbo].[${dataDescription.tbName}_search]
+GO
+`
+    let spSearch = ``
+    let spGet = ``
+    let spAdd = ``
+    let spEdit = ``
+    let spDelete = ``
+
+    let paramsSp = {
+        search:[],
+        get:[],
+        add:[],
+        edit:[],
+        delete:[],
+    }
+
+    let processAdd = {
+        fields:[],
+        values:[]
+    }
+    let processEdit = {
+        set:[],
+        
+    }
+    let conditionSp = {
+        search:[],
+        get:[],
+        add:[],
+        edit:[],
+        delete:[],
+    }
+    let fieldName_List = []
+    if(dataDescription.provider === 'mssql'){
+
+        dataDescription.dataSet.forEach(row => {
+            fieldName_List.push(row.FieldName)
+            let type = ''
+            if(row.FieldType == 'varchar' || row.FieldType == 'nvarchar'|| row.FieldType == 'char'|| row.FieldType == 'nchar'){
+                type = `${row.FieldType}(${row.FieldSize == -1?'max':row.FieldSize})  = NULL`
+            }
+            else if(row.FieldType == 'numeric' || row.FieldType == 'decimal'){
+                type = `${row.FieldType}(${row.FieldSize},${row.NumericScale == null?0:row.NumericScale})  = NULL`
+            }
+            else{
+                type = `${row.FieldType} = NULL` 
+            }
+
+            let paramName = `@${row.FieldName} ${type}`
+            // if(!row.FieldName.includes('AddWhen','UpdateWhen','DeleteWhen')){
+            if(row.FieldName != 'AddWhen' && row.FieldName != 'UpdateWhen' && row.FieldName != 'DeleteWhen'){
+                
+                if(row.FieldName == 'ID'){
+                    paramsSp.get.push(paramName)
+                    paramsSp.edit.push(paramName)
+                    paramsSp.delete.push(paramName)
+                    
+                }
+                else if(row.FieldName == 'AddBy'){
+                    paramsSp.add.push(paramName)
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push(`@${row.FieldName}`)
+                }
+                
+                else if(row.FieldName == 'UpdateBy'){
+                    paramsSp.edit.push(paramName)
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push(`@AddBy`)
+
+                    processEdit.set.push(`${row.FieldName} = @${row.FieldName}`)
+                }
+                
+                else if(row.FieldName == 'DeleteBy'){
+                    // paramsSp.delete.push(paramName)
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push(`NULL`)
+                }
+                
+                else{
+                    paramsSp.search.push(paramName)
+                    paramsSp.edit.push(paramName)
+                    paramsSp.add.push(paramName)
+
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push(`@${row.FieldName}`)
+
+                    processEdit.set.push(`${row.FieldName} = @${row.FieldName}`)
+
+
+                    if(row.FieldType == 'varchar' || row.FieldType == 'nvarchar'|| row.FieldType == 'char'|| row.FieldType == 'nchar'){
+                        conditionSp.search.push(`((isnull(@${row.FieldName},'') = '') OR (${row.FieldName} LIKE '%' + @${row.FieldName} + '%'))`)
+                    }
+                    else if(row.FieldType == 'numeric' || row.FieldType == 'decimal' || row.FieldType == 'int' || row.FieldType == 'float'){
+                        conditionSp.search.push(`((isnull(@${row.FieldName},0) = 0) OR (${row.FieldName} = @${row.FieldName}))`)
+                    }
+                    else{
+                        conditionSp.search.push(`((@${row.FieldName} = null) OR (${row.FieldName} = @${row.FieldName}))`)
+                    }
+                }
+            }
+            else{
+                if(row.FieldName == 'AddWhen'){
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push('GETDATE()')
+                }
+                else if(row.FieldName == 'UpdateWhen'){
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push('GETDATE()')
+                    processEdit.set.push(`${row.FieldName} = GETDATE()`)
+                }
+                else if(row.FieldName == 'DeleteWhen'){
+                    processAdd.fields.push(row.FieldName)
+                    processAdd.values.push(`NULL`)
+                }
+            }
+        });
+        spSearch +=`CREATE PROCEDURE [dbo].[${dataDescription.tbName}_search]
+    ${paramsSp.search.join(`,
+    `
+    )}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        ${fieldName_List.join(`,
+        `
+        )}  
+    FROM dbo.${dataDescription.tbName}
+    WHERE
+        ${conditionSp.search.join(` AND
+        `
+        )}  
+END
+GO
+        `
+
+        spGet += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_get]
+    ${paramsSp.get.join(`,
+        `
+        )}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        ${fieldName_List.join(`,
+        `
+        )}  
+    FROM dbo.${dataDescription.tbName}
+    WHERE
+        ID = @ID
+END
+GO
+        `
+
+        spAdd += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_add]
+    ${paramsSp.add.join(`,
+    `
+    )}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO dbo.${dataDescription.tbName}
+    (
+        ${processAdd.fields.join(`,
+        `
+        )}
+    )
+
+    OUTPUT Inserted.ID
+
+    VALUES
+    (
+        ${processAdd.values.join(`,
+        `
+        )}
+    )
+
+    SELECT SCOPE_IDENTITY() AS ID;
+   
+END
+GO
+        `
+        spEdit += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_edit]
+    ${paramsSp.edit.join(`,
+    `
+    )}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.${dataDescription.tbName}
+    SET
+        ${processEdit.set.join(`,
+        `
+        )}
+    WHERE ID = @ID    
+END
+GO
+        `
+
+        spDelete += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_delete]
+    ${paramsSp.delete.join(`,
+        `
+        )}
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.${dataDescription.tbName}
+    SET 
+        DeleteWhen = GETDATE()
+    WHERE ID = @ID   
+END
+GO
+        `
+
+        result.content = `/*\n${header()}*/
+
+${spHeader}
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+${spSearch}
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+${spGet}
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+${spAdd}
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+${spEdit}
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+${spDelete}
+
+`
+        result.export = true
+        result.fileName = `sp_standard_${dataDescription.tbName}.sql`
+}else if(dataDescription.provider === 'mysql'){
+
+    }
+    else{
+        result.export = false;
+    }
+    // console.log('paramsSp : ',paramsSp) 
+
+    // console.log(spSearch) 
+    console.log(result.content) 
+    return result
+}
+
+
+
 module.exports.baseVO_EXE = baseVO_EXE
 module.exports.nodejsVO_EXE = nodejsVO_EXE
 module.exports.pythonVO_EXE = pythonVO_EXE
 module.exports.codeigniterVO_EXE = codeigniterVO_EXE
+module.exports.codeigniterController = codeigniterController
+module.exports.storeProcedure = storeProcedure
