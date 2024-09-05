@@ -5,7 +5,7 @@
   --h-export: 50px;
   --h-content: calc(100vh - var(--h-header) - var(--h-footer) - var(--h-select) - var(--h-export) - 32px);
 
-  --theme-color: #777a8f;
+  --theme-color: transparent;
   --theme-font-color: #ffffff;
 
 }
@@ -109,7 +109,7 @@ tbody tr.selected td {
 :is(#pnlSelect, #pnlExport) *.input-group-text.span-layout {
   background-color: var(--theme-color) !important;
   color: var(--theme-font-color) !important;
-  border: 1px solid var(--theme-color) !important;
+  border: 1px solid var(--theme-font-color) !important;
   display: flex;
   justify-content: end;
   font-weight: bold;
@@ -118,7 +118,7 @@ tbody tr.selected td {
 :is(#pnlSelect, #pnlExport) *:where(.form-select, .form-control) {
   background-color: var(--theme-font-color) !important;
   color: var(--theme-color) !important;
-  border: 1px solid var(--theme-color) !important;
+  border: 1px solid var(--theme-font-color) !important;
 
 }
 
