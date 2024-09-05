@@ -117,7 +117,7 @@ tbody tr.selected td {
 
 :is(#pnlSelect, #pnlExport) *:where(.form-select, .form-control) {
   background-color: var(--theme-font-color) !important;
-  color: var(--theme-color) !important;
+  /* color: var(--theme-color) !important; */
   border: 1px solid var(--theme-font-color) !important;
 
 }
@@ -125,7 +125,7 @@ tbody tr.selected td {
 
 :is(#pnlSelect, #pnlExport) *:where(input[type=text], select, select option) {
   background-color: #fff;
-  color: var(--theme-color);
+  /* color: var(--theme-color); */
 }
 
 
