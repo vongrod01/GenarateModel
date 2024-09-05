@@ -604,8 +604,11 @@ function codeigniterVO_EXE(dataDescription) {
     {
         switch ($prop_name) {
     `
-    let paramsListEXE = `
-`
+    let paramsListEXE = {
+        'add':'',
+        'edit':'',
+        'search':''
+    }
     let constructorVO = `
     function __construct($objVO = null)
     {
@@ -633,10 +636,35 @@ function codeigniterVO_EXE(dataDescription) {
             case '${field.FieldName}':
                 $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)?'(int)':''}$value;
                 break;`
-        
-      
-        paramsListEXE += `          $DataVO->${field.FieldName},
+        if(field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen'){
+            if(field.FieldName == 'ID'){
+          
+                paramsListEXE.edit += `          $DataVO->${field.FieldName},
 `
+            }
+            else if(field.FieldName == 'AddBy'){
+                paramsListEXE.add += `          $DataVO->${field.FieldName},
+`
+            }
+            else if(field.FieldName == 'UpdateBy'){
+                paramsListEXE.edit += `          $DataVO->${field.FieldName},
+`
+            }
+            else{
+                paramsListEXE.add += `          $DataVO->${field.FieldName},
+`
+                paramsListEXE.search += `          $DataVO->${field.FieldName},
+`
+                paramsListEXE.edit += `          $DataVO->${field.FieldName},
+`
+            }
+
+        }
+      
+        
+       
+//         paramsListEXE += `          $DataVO->${field.FieldName},
+// `
     });
 
     constructorVO += `
@@ -702,7 +730,7 @@ ${setterVO}
     public function _Search($DataVO)
     {
         $params = [
-            ${paramsListEXE}
+            ${paramsListEXE.search}
         ];
         return $this->call_sp('${tbFullName}_search', $params);
     }
@@ -710,7 +738,7 @@ ${setterVO}
     public function _Add($DataVO)
     {
         $params = [
-            ${paramsListEXE}
+            ${paramsListEXE.add}
         ];
         $result = $this->call_sp('${tbFullName}_add', $params);
         if ($result != null and count($result) > 0) {
@@ -724,7 +752,7 @@ ${setterVO}
     public function _Edit($DataVO)
     {
         $params = [
-            ${paramsListEXE}
+            ${paramsListEXE.edit}
         ];
         $this->call_sp('${tbFullName}_edit', $params);
         return $this->_Get($DataVO->ID);

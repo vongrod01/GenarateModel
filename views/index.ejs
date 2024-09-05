@@ -12,13 +12,13 @@
     <!-- <script src="chart.js/dist/chart.umd.js"></script> -->
     <script src="jquery/dist/jquery.min.js"></script>
     <script src="bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
 
     <title>Genarate MVC</title>
 </head>
 
-<body>
+<body id="my-body">
     <header class="mb-2" id="pnlHeader">
         <span id="txtHeader">
             <%=titleHeader%>
@@ -33,11 +33,15 @@
 
 
                 <div class="input-group me-2" style="width: 33%;">
+                    
                     <span for="selDatabaseProvider" class="input-group-text span-layout search-border text-end"
-                        style="width: 120px;">Provider</span>
+                        style="width: 120px;">
+                        
+                        
+                        Provider</span>
                     <select class="form-select search-border" name="selDatabaseProvider" id="selDatabaseProvider">
                         <option value="mssql" selected>Microsoft SQL Server</option>
-                        <option value="mysql" >MySQL</option>
+                        <option value="mysql">MySQL</option>
                         <option value="postgresql">PostgreSQL</option>
                     </select>
                 </div>
@@ -45,7 +49,8 @@
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtHost" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">Host</span>
-                    <input type="text" class="form-control search-border" name="edtHost" value="192.168.100.197" id="edtHost" />
+                    <input type="text" class="form-control search-border" name="edtHost" value="192.168.100.197"
+                        id="edtHost" />
                 </div>
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtPort" class="input-group-text span-layout search-border text-end"
@@ -62,12 +67,14 @@
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtUser" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">User</span>
-                    <input type="text" class="form-control search-border" name="edtUser" value="adisorn.vo" id="edtUser" />
+                    <input type="text" class="form-control search-border" name="edtUser" value="adisorn.vo"
+                        id="edtUser" />
                 </div>
                 <div class="input-group me-2" style="width: 33%;">
                     <span for="edtPassword" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">Password</span>
-                    <input type="password" class="form-control search-border" name="edtPassword" value="vongrod01" id="edtPassword" />
+                    <input type="password" class="form-control search-border" name="edtPassword" value="vongrod01"
+                        id="edtPassword" />
                 </div>
                 <div class="input-group me-2" style="width: 33%;">
 
@@ -76,8 +83,9 @@
             </div>
         </div>
 
+      
 
-        <div class="btn btn-primary btn-lg d-flex h-100" style="align-self: center;" onclick="connectDB()">
+        <div class="my-btn h-100" style="align-self: center;" onclick="connectDB()">
             <h4 style="align-self: center;"><i class="bi bi-database-fill-check me-1"></i>Connect</h4>
         </div>
 
@@ -95,12 +103,21 @@
                 <option value="javascript">JavaScript</option>
             </select>
         </div>
-        <div class="btn btn-primary me-2 rounded-pill" id="btnExportConnectionDB"><i class="bi bi-download me-1"></i>Connection DB</div>
-        <div class="btn btn-primary me-2 rounded-pill" id="btnExportBaseClass"><i class="bi bi-download me-1"></i>Model(Base)</div>
-        <div class="btn btn-primary me-2 rounded-pill" id="btnExportVO_EXE"><i class="bi bi-download me-1"></i>Model(VO/EXE)</div>
-        <div class="btn btn-primary me-2 rounded-pill" id="btnExportView"><i class="bi bi-download me-1"></i>View</div>
-        <div class="btn btn-primary me-2 rounded-pill" id="btnExportControl"><i class="bi bi-download me-1"></i>Controller</div>
-        <div class="btn btn-primary me-2 rounded-pill" id="btnExportStoreProce"><i class="bi bi-download me-1"></i>Store Procedure</div>
+
+        <div class="my-btn" id="btnExportConnectionDB"><i class="bi bi-download me-1"></i>Connection DB</div>
+        
+        
+        <div class="my-btn" id="btnExportBaseClass"><i class="bi bi-download me-1"></i>Model(Base)</div>
+        
+        <div class="my-btn" id="btnExportVO_EXE"><i class="bi bi-download me-1"></i>Model(VO/EXE)</div>
+       
+        <div class="my-btn" id="btnExportView"><i class="bi bi-download me-1"></i>View</div>
+        
+        <div class="my-btn" id="btnExportControl"><i class="bi bi-download me-1"></i>Controller</div>
+        
+        <div class="my-btn" id="btnExportStoreProce"><i class="bi bi-download me-1"></i>Store Procedure</div>
+        
+        <!-- <button class="my-button" id="btn">Button</button> -->
     </div>
     <div class="box-shadow4 mb-2 m-1 rounded-2 p-2 d-flex justify-content-center" id="pnlContent">
         <div class="tb-content">
@@ -127,8 +144,8 @@
                         </th>
                         <th class="text-center align-middle" rowspan="2">Table</th>
                     </tr>
-                   
-    
+
+
 
                 </thead>
                 <tbody>
@@ -141,7 +158,7 @@
                 <thead class="position-sticky top-0">
                     <tr>
                         <th class="text-center align-middle" colspan="4">Field</th>
-                        
+
                     </tr>
                     <tr>
                         <th class="text-center align-middle">Name</th>
@@ -164,7 +181,61 @@
     </footer>
 
 </body>
+<script src="js/three.min.js"></script>
+<script src="js/vanta.birds.min.js"></script>
+<script src="js/vanta.net.min.js"></script>
+<script src="js/vanta.fog.min.js"></script>
+<script>
+    // VANTA.BIRDS({
+    //     el: "#my-body",
+    //     mouseControls: true,
+    //     touchControls: true,
+    //     gyroControls: false,
+    //     minHeight: 200.00,
+    //     minWidth: 200.00,
+    //     scale: 1.00,
+    //     scaleMobile: 1.00,
+    //     backgroundColor: 0x0,
+    //     color1: 0xFFDF00,
+    //     color2: 0xFF0000,
+    //     birdSize: 0.70,
+    //     wingSpan: 22.00,
+    //     speedLimit: 7.00,
+    //     separation: 48.00,
+    //     alignment: 31.00,
+    //     cohesion: 35.00
+    // })
 
+    // VANTA.NET({
+    //     el: "#my-body",
+    //     mouseControls: true,
+    //     touchControls: true,
+    //     gyroControls: false,
+    //     minHeight: 200.00,
+    //     minWidth: 200.00,
+    //     scale: 1.00,
+    //     scaleMobile: 1.00,
+    //     color: 0x9185aa,
+    //     backgroundColor: 0x0,
+    //     points: 13.00,
+    //     spacing: 13.00
+    // })
+    VANTA.FOG({
+  el: "#my-body",
+  mouseControls: true,
+  touchControls: true,
+  gyroControls: false,
+  minHeight: 200.00,
+  minWidth: 200.00,
+  highlightColor: 0x5f5f5c,
+  midtoneColor: 0x6b3535,
+  lowlightColor: 0xd0d31,
+  baseColor: 0x0,
+  blurFactor: 0.45,
+  speed: 1.30,
+  zoom: 2.60
+})
+</script>
 <script src="js/helper.js"></script>
 <script src="js/fe_connect_db.js"></script>
 <script src="js/fe_export_file.js"></script>
