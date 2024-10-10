@@ -12,6 +12,9 @@
 
 body{
   background-image: url(../img/bg.jpg);
+  background-size: cover;    /* ครอบคลุมพื้นที่ทั้งหมดของหน้าจอ */
+  background-position: center; /* จัดตำแหน่งให้อยู่ตรงกลาง */
+  background-repeat: no-repeat; /* ไม่ทำให้ภาพซ้ำ */
 }
 #pnlSelect {
   height: var(--h-select);
@@ -131,15 +134,15 @@ tbody tr.selected td {
 
 #tbDatabaseList thead tr th{
   color: #fff;
-  background-color: var(--bs-primary);
+  background-color: var(--bs-dark);
 }
 #tbTableList thead tr th{
   color: #fff;
-  background-color: var(--bs-secondary);
+  background-color: var(--bs-dark);
 }
 #tbTableDesciption thead tr th{
-  color: #000;
-  background-color: var(--bs-info);
+  color: #fff;
+  background-color: var(--bs-dark);
 }
 
 

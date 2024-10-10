@@ -217,7 +217,7 @@ abstract class BaseEXE{
             $errors = $this->db->error();
             $this->log_error_db($errors);
             $this->data_set = [];
-            return null;
+            throw new \\Exception($errors["message"], $errors["code"], $th);
         }
     }
 
@@ -230,7 +230,7 @@ abstract class BaseEXE{
             $errors = $this->db->error();
             $this->log_error_db($errors);
             $this->data_set = [];
-            return null;
+            throw new \\Exception($errors["message"], $errors["code"], $th);
         }
     }
 
@@ -324,7 +324,7 @@ function nodejsVO_EXE(dataDescription) {
 
     dataDescription.dataSet.forEach(field => {
         let initValue
-        if (['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)) {
+        if (['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)) {
             initValue = 0
         }
         else if (['date', 'datetime'].includes(field.FieldType)) {
@@ -472,7 +472,7 @@ function pythonVO_EXE(dataDescription) {
 
     dataDescription.dataSet.forEach(field => {
         let initValue
-        if (['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)) {
+        if (['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)) {
             initValue = 0
         }
         else if (['date', 'datetime'].includes(field.FieldType)) {
@@ -616,7 +616,7 @@ function codeigniterVO_EXE(dataDescription) {
     // Construct
     dataDescription.dataSet.forEach(field => {
         let initValue
-        if (['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)) {
+        if (['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)) {
             initValue = '0;'
         }
         else if (['date', 'datetime'].includes(field.FieldType)) {
@@ -634,7 +634,7 @@ function codeigniterVO_EXE(dataDescription) {
                 break;`
         setterVO +=`
             case '${field.FieldName}':
-                $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'decimal'].includes(field.FieldType)?'(int)':''}$value;
+                $this->props[$prop_name] = ${['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)?'(int)':''}$value;
                 break;`
         if(field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen'){
             if(field.FieldName == 'ID'){
@@ -714,17 +714,13 @@ ${setterVO}
     let methodEXE = `
     public function _Get($ID)
     {
-        try {
-            $this->call_sp('${tbFullName}_get', [$ID]);
-            if (count($this->data_set) > 0) {
-                $this->_result->dataAssignToProps($this->data_set[0]);
-                return $this->_result;
-            } else {
-                return null;
-            }
-        } catch (\\Throwable $th) {
+        $this->call_sp('${tbFullName}_get', [$ID]);
+        if (count($this->data_set) > 0) {
+            $this->_result->dataAssignToProps($this->data_set[0]);
+            return $this->_result;
+        } else {
             return null;
-        }
+        }  
     }
 
     public function _Search($DataVO)
@@ -758,17 +754,13 @@ ${setterVO}
         return $this->_Get($DataVO->ID);
     }
     
-    public function _Delete($ID) {
-        try {
-            $this->call_sp('${tbFullName}_delete', [$ID]);
-            if($this->_Get($ID) === null){
-                return true;
-            }
-            else{
-                return false;
-            }
-           
-        } catch (\\Throwable $th) {
+    public function _Delete($ID)
+    {
+        $this->call_sp('${tbFullName}_delete', [$ID]);
+        if($this->_Get($ID) === null){
+            return true;
+        }
+        else{
             return false;
         }
     }
@@ -818,55 +810,59 @@ class ${className}Controller extends ResourceController
 {
     public function Process()
     {
-        $method = $this->request->getMethod();
-        $data_req = $this->request->getVar();
-        $ID = (int)$this->request->getVar("ID");
-        $${className}VO = new ${className}VO();
-        $${className}EXE = new ${className}EXE();
-        if ($method == "get" and $ID !== null and $ID !== 0) {
-            // GET
+        try {
+            $method = $this->request->getMethod();
+            $data_req = $this->request->getVar();
+            $ID = (int)$this->request->getVar("ID");
+            $${className}VO = new ${className}VO();
+            $${className}EXE = new ${className}EXE();
+            if ($method == "get" and $ID !== null and $ID !== 0) {
+                // GET
 
-            if ($${className}EXE->_Get($ID) !== null) {
-                $${className}EXE->_result->assignTo($${className}VO);
-                return $this->respond($${className}VO->getProps(), 200);
-            } else {
-                return $this->respond(["Message" => "No Content"], 200);
-            }
-        } elseif ($method == "get") {
-            // SEARCH
-            $${className}VO->dataAssignToProps($data_req);
-            $${className}EXE->_Search($${className}VO);
-            return $this->respond($${className}EXE->data_set, 200);
-        } elseif ($method == "post") {
-            // ADD
-            $${className}VO->dataAssignToProps($data_req);
-            if ($${className}EXE->_Add($${className}VO) !== null) {
-                $${className}EXE->_result->assignTo($${className}VO);
-                return $this->respond($${className}VO->getProps(), 200);
-            } else {
-                return $this->respond(["Message" => "Not Modified"], 200);
-            }
-        } elseif ($method == "put") {
-            // EDIT
-            if ($${className}EXE->_Get($ID) !== null) {
-                $${className}EXE->_result->assignTo($${className}VO);
+                if ($${className}EXE->_Get($ID) !== null) {
+                    $${className}EXE->_result->assignTo($${className}VO);
+                    return $this->respond($${className}VO->getProps(), 200);
+                } else {
+                    return $this->respond(["Message" => "No Content"], 200);
+                }
+            } elseif ($method == "get") {
+                // SEARCH
                 $${className}VO->dataAssignToProps($data_req);
-                if ($${className}EXE->_Edit($${className}VO) !== null) {
+                $${className}EXE->_Search($${className}VO);
+                return $this->respond($${className}EXE->data_set, 200);
+            } elseif ($method == "post") {
+                // ADD
+                $${className}VO->dataAssignToProps($data_req);
+                if ($${className}EXE->_Add($${className}VO) !== null) {
                     $${className}EXE->_result->assignTo($${className}VO);
                     return $this->respond($${className}VO->getProps(), 200);
                 } else {
                     return $this->respond(["Message" => "Not Modified"], 200);
                 }
-            } else {
-                return $this->respond(["Message" => "Not Modified"], 200);
+            } elseif ($method == "put") {
+                // EDIT
+                if ($${className}EXE->_Get($ID) !== null) {
+                    $${className}EXE->_result->assignTo($${className}VO);
+                    $${className}VO->dataAssignToProps($data_req);
+                    if ($${className}EXE->_Edit($${className}VO) !== null) {
+                        $${className}EXE->_result->assignTo($${className}VO);
+                        return $this->respond($${className}VO->getProps(), 200);
+                    } else {
+                        return $this->respond(["Message" => "Not Modified"], 200);
+                    }
+                } else {
+                    return $this->respond(["Message" => "Not Modified"], 200);
+                }
+            } elseif ($method == "delete") {
+                // DELETE
+                if ($${className}EXE->_Delete($ID)) {
+                    return $this->respond(["Message" => "Successfully deleted data"], 200);
+                } else {
+                    return $this->respond(["Message" => "Not Modified"], 200);
+                }
             }
-        } elseif ($method == "delete") {
-            // DELETE
-            if ($${className}EXE->_Delete($ID)) {
-                return $this->respond("Message" => "Successfully deleted data"], 200);
-            } else {
-                return $this->respond(["Message" => "Not Modified"], 200);
-            }
+        } catch (\\Throwable $th) {
+            return $this->respond(["error" => $th->getMessage()], 404);
         }
     }
 }
