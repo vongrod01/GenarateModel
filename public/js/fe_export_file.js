@@ -93,6 +93,25 @@ document.getElementById('btnExportStoreProce').onclick = async function () {
         // console.log(elChk.value)
     });
 }
+document.getElementById('btnExportIndexTable').onclick = async function () {
+
+    document.querySelectorAll('#tbTableList * td input[type=checkbox]:checked').forEach(elChk => {
+        let tbName = elChk.value
+        let databaseName = document.querySelector('#tbDatabaseList tbody tr.selected td').innerHTML
+        let connDetail = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
+        connDetail.databaseName = databaseName
+        connDetail.tbName = tbName
+        connDetail.programming = document.getElementById('selProgramming').value
+        exportIndexTable(connDetail)
+            .then((data) => {
+                // console.log(data)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        // console.log(elChk.value)
+    });
+}
 
 
 async function exportVO_EXE(connDetail) {
@@ -170,6 +189,41 @@ async function exportStoreProcedure(connDetail) {
         try {
 
             await reqAndRes('/contentStoreProcedure', 'GET', connDetail, async (dataRes) => {
+                if(dataRes.export){
+                    if(Array.isArray(dataRes.content)){
+                        for (let i = 0; i < dataRes.content.length; i++) {
+                        
+                            // downloadFilesList.push(dataRes)
+                        
+                            await downloadFile(dataRes.fileName[i], dataRes.content[i])
+                        
+                        }
+                        resolve(`export ${dataRes.fileName[0]} succesfuly!`)
+                    }else{
+
+                        
+                        downloadFilesList.push(dataRes)
+                        
+                        await downloadFile(dataRes.fileName, dataRes.content)
+                        
+                        resolve(`export ${dataRes.fileName} succesfuly!`)
+                    }
+                }
+                else{
+                    resolve(`not export!`)
+                }
+            })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
+async function exportIndexTable(connDetail) {
+    return new Promise(async (resolve, reject) => {
+        try {
+
+            await reqAndRes('/contentIndexTable', 'GET', connDetail, async (dataRes) => {
                 if(dataRes.export){
                     if(Array.isArray(dataRes.content)){
                         for (let i = 0; i < dataRes.content.length; i++) {

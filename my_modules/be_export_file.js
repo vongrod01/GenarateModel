@@ -1180,10 +1180,61 @@ ${spDelete}
     // console.log('paramsSp : ',paramsSp) 
 
     // console.log(spSearch) 
-    console.log(result.content) 
+    // console.log(result.content) 
     return result
 }
 
+function indexTable(dataDescription){
+
+    let result = {
+        export : false,
+        content : '',
+        fileName : ''
+    }
+    let foreignKeyList = []
+    dataDescription.dataSet.forEach(Field => {
+        if(Field.FieldName.includes("ID_")){
+            foreignKeyList.push(Field.FieldName)
+        }
+    });
+
+    if(dataDescription.provider === 'mssql'){
+        console.log(foreignKeyList)
+        let createIdx =``
+        if(foreignKeyList.length > 0){
+            foreignKeyList.forEach(fldName => {
+                createIdx += `
+IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_${fldName}' AND object_id = OBJECT_ID('${dataDescription.tbName}'))
+BEGIN
+    DROP INDEX idx_${fldName} ON ${dataDescription.tbName};
+END
+
+CREATE NONCLUSTERED INDEX idx_${fldName} ON ${dataDescription.tbName}(${fldName});`
+            });
+
+            result.content = `/*\n${header()}*/
+            
+USE [${dataDescription.databaseName}]
+GO
+
+${createIdx}
+            `
+            result.fileName = `idx_standard_${dataDescription.tbName}.sql`
+            result.export = true
+        }
+        else{
+
+            result.export = false
+        }
+
+    }
+    else if(dataDescription.provider === 'mysql'){
+
+    }
+
+    return result
+
+}
 
 
 module.exports.baseVO_EXE = baseVO_EXE
@@ -1192,3 +1243,4 @@ module.exports.pythonVO_EXE = pythonVO_EXE
 module.exports.codeigniterVO_EXE = codeigniterVO_EXE
 module.exports.codeigniterController = codeigniterController
 module.exports.storeProcedure = storeProcedure
+module.exports.indexTable = indexTable
