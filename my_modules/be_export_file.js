@@ -81,6 +81,77 @@ function baseVO_EXE(programming, provider) {
             fileName: 'BaseClass.js'
         }
     }
+    else if (programming === 'nextjs') {
+        let importDB = ''
+        if (provider === 'mssql') {
+            importDB = `import { Db } from '../db/Db'`
+        }
+        else {
+
+        }
+        content = `/*\n${header()}*/
+        import 'server-only'
+        ${importDB}
+        export class BaseVO {
+            constructor() {
+
+            }
+            assignTo(destination) {
+                let jsonData = { ...this }
+                for (var key in jsonData) {
+                    if (destination[key] !== undefined) {
+                        destination[key] = jsonData[key]
+                    }
+                    else {
+                        console.log('This destination.attribute(' + key + ') does not exist in ' + this.constructor.name + '.')
+                    }
+                }
+            }
+            toJson() {
+                let jsonData = { ...this }
+                let newData = {}
+                for (var key in jsonData) {
+                    let newKey = key[0] === '_' ? key.slice(1, key.length) : key
+                    newData[newKey] = jsonData[key]
+                }
+                return newData
+            }
+            jsonAssignToAttr(jsonData) {
+                if (typeof jsonData === 'object') {
+                    for (var key in jsonData) {
+                        if (this[key] !== undefined) {
+                            this[key] = jsonData[key]
+                        }
+                        else {
+                            console.log('This attribute(' + key + ') does not exist in ' + this.constructor.name + '.')
+                        }
+                    }
+                }
+            }
+        }
+            
+        export class BaseEXE extends Db {
+            constructor(connGroup = 'default') {
+                super(connGroup)
+            }
+            logErrorExec(err) {
+                let dividingLine = ''
+                for (let index = 0; index < dividingLine.length; index++) {
+                    dividingLine += '-'
+
+                }
+                console.log(dividingLine)
+                console.log(err)
+                console.log(dividingLine)
+            }
+        }
+`
+        return {
+            export: true,
+            content: content,
+            fileName: 'BaseClass.js'
+        }
+    }
     else if (programming === 'python') {
         let importDB = ''
         if (provider === 'mysql') {
@@ -133,9 +204,9 @@ function baseVO_EXE(programming, provider) {
     }
     else if (programming === 'codeigniter4') {
         let result = {
-            ecport : true,
-            content : [],
-            fileName : []
+            ecport: true,
+            content: [],
+            fileName: []
         }
         let importDB = ''
         if (provider === 'mssql') {
@@ -186,9 +257,9 @@ abstract class BaseVO
 }
     `)
 
-    result.fileName.push(`BaseVO.php`)
+        result.fileName.push(`BaseVO.php`)
 
-    result.content.push(`<?php namespace App\\My_Models;     
+        result.content.push(`<?php namespace App\\My_Models;     
 /*\n${header()}*/
 ${importDB}
 
@@ -253,11 +324,11 @@ abstract class BaseEXE{
 }
     `)
 
-    result.fileName.push(`BaseEXE.php`)
+        result.fileName.push(`BaseEXE.php`)
 
 
 
-    return result
+        return result
     }
     else {
         return {
@@ -271,7 +342,7 @@ abstract class BaseEXE{
 
 function header() {
     let dt = new Date();
-    const month = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     dformat = `${dt.getDate()}-${month[dt.getMonth()]}-${dt.getFullYear()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
 
     let genDateStr = `Generate Date : ${dformat}`
@@ -324,7 +395,7 @@ function nodejsVO_EXE(dataDescription) {
 
     dataDescription.dataSet.forEach(field => {
         let initValue
-        if (['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)) {
+        if (['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType)) {
             initValue = 0
         }
         else if (['date', 'datetime'].includes(field.FieldType)) {
@@ -450,6 +521,153 @@ module.exports.${className}EXE = ${className}EXE
         fileName: `${className}.js`
     }
 }
+function nextjsVO_EXE(dataDescription) {
+    // console.table(dataDescription)
+    let classVO = ``
+    let classEXE = ``
+    let className = ''
+    let constructorVO = `constructor() {
+        super()
+        `
+    let getterSetterVO = ''
+    let paramsListEXE = ''
+
+    dataDescription.tbName.split('_').forEach(str => {
+        // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
+        str.charAt(0).toUpperCase() + str.slice(1);
+        className += str.charAt(0).toUpperCase() + str.slice(1)
+    });
+    let constructorEXE = `constructor(connGroup) {
+        super(connGroup)
+        this.result = new ${className}VO()
+    }`
+
+    dataDescription.dataSet.forEach(field => {
+        let initValue
+        if (['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType)) {
+            initValue = 0
+        }
+        else if (['date', 'datetime'].includes(field.FieldType)) {
+            initValue = 'new Date()'
+        }
+        else {
+            initValue = "''"
+        }
+        constructorVO += `this._${field.FieldName} = ${initValue}
+        `
+        getterSetterVO += `
+    get ${field.FieldName}() {
+        return this._${field.FieldName};
+    }
+    set ${field.FieldName}(value) {
+        this._${field.FieldName} = value
+    }
+        `
+        paramsListEXE += `          ${field.FieldName} : DataVO.${field.FieldName},
+    `
+    });
+    constructorVO += '}'
+    classVO += `
+export class ${className}VO extends BaseVO {
+    ${constructorVO}
+    ${getterSetterVO}
+}   
+     `
+    let methodEXE = `
+    async get(ID) {
+        try {
+
+            const dataset = await this.callSp('${dataDescription.tbName}_get', { ID })
+            if (dataset.length > 0) {
+                this.result.jsonAssignToAttr(dataset[0])
+                return this.result
+            }
+            else {
+                return null
+            }
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_get : ' + error + '******')
+            return null
+        }
+    }
+
+    async add(DataVO) {
+        try {
+            let params = {
+                ${paramsListEXE}
+            }
+            const dataset = await this.callSp('${dataDescription.tbName}_add', params)
+            if (dataset.length > 0) {
+                return this.get(dataset[0].ID)
+            }
+            else {
+                return null
+            }
+
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_add : ' + error + '******')
+            return null
+        }
+    }
+
+    async edit(DataVO) {
+        try {
+            let params = {
+                ${paramsListEXE}
+            }
+            await this.callSp('${dataDescription.tbName}_edit', params)
+            return this.get(DataVO.ID)
+
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_edit : ' + error + '******')
+            return null
+        }
+    }
+
+    async delete(ID) {
+        try {
+            await this.callSp('${dataDescription.tbName}_delete', { ID })
+            return true
+
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_delete : ' + error + '******')
+            return false
+        }
+    }
+
+    async search(DataVO) {
+        try {
+            let params = {
+                ${paramsListEXE}
+            }
+            const dataset = await this.callSp('${dataDescription.tbName}_search', params)
+            return dataset
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_search : ' + error + '******')
+            return []
+        }
+    }
+     
+     `
+    classEXE += `
+export class ${className}EXE extends BaseEXE {   
+    ${constructorEXE}
+    ${methodEXE}
+}
+    `
+
+    let content = `/*\n${header()}*/
+import 'server-only'
+import { BaseVO, BaseEXE } from './BaseClass'
+    ${classVO}
+    ${classEXE}
+    `
+    return {
+        export: true,
+        content: content,
+        fileName: `${className}.js`
+    }
+}
 function pythonVO_EXE(dataDescription) {
     let classVO = ``
     let classEXE = ``
@@ -472,7 +690,7 @@ function pythonVO_EXE(dataDescription) {
 
     dataDescription.dataSet.forEach(field => {
         let initValue
-        if (['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)) {
+        if (['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType)) {
             initValue = 0
         }
         else if (['date', 'datetime'].includes(field.FieldType)) {
@@ -579,7 +797,7 @@ import datetime
 }
 
 function codeigniterVO_EXE(dataDescription) {
-    console.log('dataDescription.databaseName : ',dataDescription.databaseName)
+    console.log('dataDescription.databaseName : ', dataDescription.databaseName)
 
     let tbFullName = `${dataDescription.databaseName}.dbo.${dataDescription.tbName}`
     let className = ''
@@ -589,9 +807,9 @@ function codeigniterVO_EXE(dataDescription) {
         className += str.charAt(0).toUpperCase() + str.slice(1)
     });
     let result = {
-        export : true,
-        content : [],
-        fileName : []
+        export: true,
+        content: [],
+        fileName: []
     }
     let content = '';
     let getterVO = `
@@ -605,9 +823,9 @@ function codeigniterVO_EXE(dataDescription) {
         switch ($prop_name) {
     `
     let paramsListEXE = {
-        'add':'',
-        'edit':'',
-        'search':''
+        'add': '',
+        'edit': '',
+        'search': ''
     }
     let constructorVO = `
     function __construct($objVO = null)
@@ -616,7 +834,7 @@ function codeigniterVO_EXE(dataDescription) {
     // Construct
     dataDescription.dataSet.forEach(field => {
         let initValue
-        if (['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)) {
+        if (['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType)) {
             initValue = '0;'
         }
         else if (['date', 'datetime'].includes(field.FieldType)) {
@@ -628,29 +846,29 @@ function codeigniterVO_EXE(dataDescription) {
         constructorVO += `  $this->${field.FieldName} = ${initValue}
         `
 
-        getterVO +=`
+        getterVO += `
             case '${field.FieldName}':
                 return $this->props[$prop_name];
                 break;`
-        setterVO +=`
+        setterVO += `
             case '${field.FieldName}':
-                $this->props[$prop_name] = ${['int', 'tinyint', 'smallint',  'bigint', 'decimal'].includes(field.FieldType)?'(int)':''}$value;
+                $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType) ? '(int)' : ''}$value;
                 break;`
-        if(field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen'){
-            if(field.FieldName == 'ID'){
-          
+        if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
+            if (field.FieldName == 'ID') {
+
                 paramsListEXE.edit += `          $DataVO->${field.FieldName},
 `
             }
-            else if(field.FieldName == 'AddBy'){
+            else if (field.FieldName == 'AddBy') {
                 paramsListEXE.add += `          $DataVO->${field.FieldName},
 `
             }
-            else if(field.FieldName == 'UpdateBy'){
+            else if (field.FieldName == 'UpdateBy') {
                 paramsListEXE.edit += `          $DataVO->${field.FieldName},
 `
             }
-            else{
+            else {
                 paramsListEXE.add += `          $DataVO->${field.FieldName},
 `
                 paramsListEXE.search += `          $DataVO->${field.FieldName},
@@ -660,11 +878,11 @@ function codeigniterVO_EXE(dataDescription) {
             }
 
         }
-      
-        
-       
-//         paramsListEXE += `          $DataVO->${field.FieldName},
-// `
+
+
+
+        //         paramsListEXE += `          $DataVO->${field.FieldName},
+        // `
     });
 
     constructorVO += `
@@ -783,7 +1001,7 @@ class ${className}EXE extends BaseEXE
     // จบ EXE
     // -----------------------------------------------------------
 
-    
+
     return result
 }
 
@@ -795,9 +1013,9 @@ function codeigniterController(dataDescription) {
         className += str.charAt(0).toUpperCase() + str.slice(1)
     });
     let result = {
-        export : true,
-        content : '',
-        fileName : ''
+        export: true,
+        content: '',
+        fileName: ''
     }
     let content = `<?php namespace App\\Controllers;
 /*\n${header()}*/
@@ -870,21 +1088,21 @@ class ${className}Controller extends ResourceController
     `;
 
 
-    
-  
+
+
     result.content = content;
     result.fileName = `${className}Controller.php`
 
-    
+
     return result
 }
 
 
-function storeProcedure(dataDescription){
+function storeProcedure(dataDescription) {
     let result = {
-        export : false,
-        content : '',
-        fileName : ''
+        export: false,
+        content: '',
+        fileName: ''
     }
     // console.log('provider : ',dataDescription.provider)
     // console.log('databaseName : ',dataDescription.databaseName) 
@@ -919,75 +1137,75 @@ GO
     let spDelete = ``
 
     let paramsSp = {
-        search:[],
-        get:[],
-        add:[],
-        edit:[],
-        delete:[],
+        search: [],
+        get: [],
+        add: [],
+        edit: [],
+        delete: [],
     }
 
     let processAdd = {
-        fields:[],
-        values:[]
+        fields: [],
+        values: []
     }
     let processEdit = {
-        set:[],
-        
+        set: [],
+
     }
     let conditionSp = {
-        search:[],
-        get:[],
-        add:[],
-        edit:[],
-        delete:[],
+        search: [],
+        get: [],
+        add: [],
+        edit: [],
+        delete: [],
     }
     let fieldName_List = []
-    if(dataDescription.provider === 'mssql'){
+    if (dataDescription.provider === 'mssql') {
 
         dataDescription.dataSet.forEach(row => {
             fieldName_List.push(row.FieldName)
             let type = ''
-            if(row.FieldType == 'varchar' || row.FieldType == 'nvarchar'|| row.FieldType == 'char'|| row.FieldType == 'nchar'){
-                type = `${row.FieldType}(${row.FieldSize == -1?'max':row.FieldSize})  = NULL`
+            if (row.FieldType == 'varchar' || row.FieldType == 'nvarchar' || row.FieldType == 'char' || row.FieldType == 'nchar') {
+                type = `${row.FieldType}(${row.FieldSize == -1 ? 'max' : row.FieldSize})  = NULL`
             }
-            else if(row.FieldType == 'numeric' || row.FieldType == 'decimal'){
-                type = `${row.FieldType}(${row.FieldSize},${row.NumericScale == null?0:row.NumericScale})  = NULL`
+            else if (row.FieldType == 'numeric' || row.FieldType == 'decimal') {
+                type = `${row.FieldType}(${row.FieldSize},${row.NumericScale == null ? 0 : row.NumericScale})  = NULL`
             }
-            else{
-                type = `${row.FieldType} = NULL` 
+            else {
+                type = `${row.FieldType} = NULL`
             }
 
             let paramName = `@${row.FieldName} ${type}`
             // if(!row.FieldName.includes('AddWhen','UpdateWhen','DeleteWhen')){
-            if(row.FieldName != 'AddWhen' && row.FieldName != 'UpdateWhen' && row.FieldName != 'DeleteWhen'){
-                
-                if(row.FieldName == 'ID'){
+            if (row.FieldName != 'AddWhen' && row.FieldName != 'UpdateWhen' && row.FieldName != 'DeleteWhen') {
+
+                if (row.FieldName == 'ID') {
                     paramsSp.get.push(paramName)
                     paramsSp.edit.push(paramName)
                     paramsSp.delete.push(paramName)
-                    
+
                 }
-                else if(row.FieldName == 'AddBy'){
+                else if (row.FieldName == 'AddBy') {
                     paramsSp.add.push(paramName)
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push(`@${row.FieldName}`)
                 }
-                
-                else if(row.FieldName == 'UpdateBy'){
+
+                else if (row.FieldName == 'UpdateBy') {
                     paramsSp.edit.push(paramName)
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push(`@AddBy`)
 
                     processEdit.set.push(`${row.FieldName} = @${row.FieldName}`)
                 }
-                
-                else if(row.FieldName == 'DeleteBy'){
+
+                else if (row.FieldName == 'DeleteBy') {
                     // paramsSp.delete.push(paramName)
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push(`NULL`)
                 }
-                
-                else{
+
+                else {
                     paramsSp.search.push(paramName)
                     paramsSp.edit.push(paramName)
                     paramsSp.add.push(paramName)
@@ -998,37 +1216,37 @@ GO
                     processEdit.set.push(`${row.FieldName} = @${row.FieldName}`)
 
 
-                    if(row.FieldType == 'varchar' || row.FieldType == 'nvarchar'|| row.FieldType == 'char'|| row.FieldType == 'nchar'){
+                    if (row.FieldType == 'varchar' || row.FieldType == 'nvarchar' || row.FieldType == 'char' || row.FieldType == 'nchar') {
                         conditionSp.search.push(`((isnull(@${row.FieldName},'') = '') OR (${row.FieldName} LIKE '%' + @${row.FieldName} + '%'))`)
                     }
-                    else if(row.FieldType == 'numeric' || row.FieldType == 'decimal' || row.FieldType == 'int' || row.FieldType == 'float'){
+                    else if (row.FieldType == 'numeric' || row.FieldType == 'decimal' || row.FieldType == 'int' || row.FieldType == 'float') {
                         conditionSp.search.push(`((isnull(@${row.FieldName},0) = 0) OR (${row.FieldName} = @${row.FieldName}))`)
                     }
-                    else{
+                    else {
                         conditionSp.search.push(`((@${row.FieldName} = null) OR (${row.FieldName} = @${row.FieldName}))`)
                     }
                 }
             }
-            else{
-                if(row.FieldName == 'AddWhen'){
+            else {
+                if (row.FieldName == 'AddWhen') {
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push('GETDATE()')
                 }
-                else if(row.FieldName == 'UpdateWhen'){
+                else if (row.FieldName == 'UpdateWhen') {
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push('GETDATE()')
                     processEdit.set.push(`${row.FieldName} = GETDATE()`)
                 }
-                else if(row.FieldName == 'DeleteWhen'){
+                else if (row.FieldName == 'DeleteWhen') {
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push(`NULL`)
                 }
             }
         });
-        spSearch +=`CREATE PROCEDURE [dbo].[${dataDescription.tbName}_search]
+        spSearch += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_search]
     ${paramsSp.search.join(`,
     `
-    )}
+        )}
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1068,7 +1286,7 @@ GO
         spAdd += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_add]
     ${paramsSp.add.join(`,
     `
-    )}
+        )}
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1097,7 +1315,7 @@ GO
         spEdit += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_edit]
     ${paramsSp.edit.join(`,
     `
-    )}
+        )}
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1171,10 +1389,10 @@ ${spDelete}
 `
         result.export = true
         result.fileName = `sp_standard_${dataDescription.tbName}.sql`
-}else if(dataDescription.provider === 'mysql'){
+    } else if (dataDescription.provider === 'mysql') {
 
     }
-    else{
+    else {
         result.export = false;
     }
     // console.log('paramsSp : ',paramsSp) 
@@ -1184,24 +1402,24 @@ ${spDelete}
     return result
 }
 
-function indexTable(dataDescription){
+function indexTable(dataDescription) {
 
     let result = {
-        export : false,
-        content : '',
-        fileName : ''
+        export: false,
+        content: '',
+        fileName: ''
     }
     let foreignKeyList = []
     dataDescription.dataSet.forEach(Field => {
-        if(Field.FieldName.includes("ID_")){
+        if (Field.FieldName.includes("ID_")) {
             foreignKeyList.push(Field.FieldName)
         }
     });
 
-    if(dataDescription.provider === 'mssql'){
+    if (dataDescription.provider === 'mssql') {
         console.log(foreignKeyList)
-        let createIdx =``
-        if(foreignKeyList.length > 0){
+        let createIdx = ``
+        if (foreignKeyList.length > 0) {
             foreignKeyList.forEach(fldName => {
                 createIdx += `
 IF EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_${fldName}' AND object_id = OBJECT_ID('${dataDescription.tbName}'))
@@ -1222,13 +1440,13 @@ ${createIdx}
             result.fileName = `idx_standard_${dataDescription.tbName}.sql`
             result.export = true
         }
-        else{
+        else {
 
             result.export = false
         }
 
     }
-    else if(dataDescription.provider === 'mysql'){
+    else if (dataDescription.provider === 'mysql') {
 
     }
 
@@ -1239,6 +1457,7 @@ ${createIdx}
 
 module.exports.baseVO_EXE = baseVO_EXE
 module.exports.nodejsVO_EXE = nodejsVO_EXE
+module.exports.nextjsVO_EXE = nextjsVO_EXE
 module.exports.pythonVO_EXE = pythonVO_EXE
 module.exports.codeigniterVO_EXE = codeigniterVO_EXE
 module.exports.codeigniterController = codeigniterController

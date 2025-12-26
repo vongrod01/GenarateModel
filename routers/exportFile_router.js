@@ -28,6 +28,10 @@ router.get('/contentVO_EXE', async (req, res) => {
 
         res.json(be_export_file.nodejsVO_EXE(dataDescription))
     }
+    else if(req_json.programming === 'nextjs'){
+
+        res.json(be_export_file.nextjsVO_EXE(dataDescription))
+    }
     else if(req_json.programming === 'python'){
 
         res.json(be_export_file.pythonVO_EXE(dataDescription))
