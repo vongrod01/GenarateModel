@@ -5,7 +5,133 @@ const fs = require("fs")
 
 let systemConfig = JSON.parse(fs.readFileSync('SystemConfig.json', 'utf-8'))
 
-function baseVO_EXE(programming, provider) {
+function dbService(programming, provider, nameSpace = '') {
+    console.log("dbService : ", { programming, provider, nameSpace })
+    let content = '';
+
+    if (programming === '.net 4.5') {
+
+        if (provider == 'mssql') {
+
+            content = `/*\n${header()}*/
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
+
+${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
+    public class DBService
+    {
+        public List<Dictionary<string, object>> Dataset { get; private set; }
+
+        public void QuerySQL(string sqlQuery)
+        {
+            var connection = DatabaseConnection.ConnectToDB();
+            if (string.IsNullOrWhiteSpace(sqlQuery))
+                throw new ArgumentException("sqlQuery is required", "sqlQuery");
+
+            try
+            {
+                using (var command = new SqlCommand(sqlQuery, connection))
+                {
+                    command.CommandType = CommandType.Text;
+                    command.CommandTimeout = 180;
+
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Dataset = ReadData(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                
+                System.Diagnostics.Debug.WriteLine("Error executing SQL: " + ex);
+                throw;
+            }
+        }
+
+        public void CallSp(string spName, Dictionary<string, object> spParameter)
+        {
+            if (string.IsNullOrWhiteSpace(spName))
+                throw new ArgumentException("spName is required", "spName");
+
+            try
+            {
+                var connection = DatabaseConnection.ConnectToDB();
+                using (var command = new SqlCommand(spName, connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    command.CommandTimeout = 180;
+
+                    if (spParameter != null)
+                    {
+                        foreach (var p in spParameter)
+                        {
+                            command.Parameters.AddWithValue(p.Key, p.Value ?? DBNull.Value);
+                        }
+                    }
+
+                    connection.Open();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        Dataset = ReadData(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Error executing stored procedure [" + spName + "]: " + ex);
+                throw;
+            }
+        }
+
+    
+        public static List<Dictionary<string, object>> ReadData(SqlDataReader reader)
+        {
+            var dataTable = new DataTable();
+            dataTable.Load(reader);
+
+            var results = new List<Dictionary<string, object>>(dataTable.Rows.Count);
+
+            foreach (DataRow row in dataTable.Rows)
+            {
+                var dict = new Dictionary<string, object>(dataTable.Columns.Count, StringComparer.OrdinalIgnoreCase);
+
+                foreach (DataColumn col in dataTable.Columns)
+                {
+                    var value = row[col];
+                    dict[col.ColumnName] = (value == DBNull.Value) ? null : value;
+                }
+
+                results.Add(dict);
+            }
+
+            return results;
+        }
+    }
+${nameSpace.trim() != '' ? `}` : ''}  
+`
+        }
+
+
+        return {
+            export: true,
+            content: content,
+            fileName: 'DBService.cs'
+        }
+    }
+    else {
+        return {
+            export: false
+
+        }
+    }
+
+}
+function baseVO_EXE(programming, provider, nameSpace = '') {
+    console.log({ programming, provider, nameSpace })
     let content = '';
     if (programming === 'nodejs') {
         let importDB = ''
@@ -330,6 +456,74 @@ abstract class BaseEXE{
 
         return result
     }
+    else if (programming === '.net 4.5') {
+        let result = {
+            ecport: true,
+            content: [],
+            fileName: []
+        }
+        let importDB = ''
+        if (provider === 'mssql') {
+            // importDB = `from .ConnectionMySQL import ConnectMySQL`
+        }
+        else {
+
+        }
+        result.content.push(`/*\n${header()}*/          
+using System.Collections.Generic;
+using System.Reflection;
+${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Models\n{` : ''}
+
+    public class BaseModel
+    {
+        public Dictionary<string, object> ToDict()
+        {
+            var dict = new Dictionary<string, object>();
+
+            var props = GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var p in props)
+            {
+                if (!p.CanRead) continue;
+                dict[p.Name] = p.GetValue(this, null);
+            }
+
+            return dict;
+        }
+    }
+${nameSpace.trim() != '' ? `}` : ''}
+`)
+
+        result.fileName.push(`BaseModel.cs`)
+
+        result.content.push(`/*\n${header()}*/   
+using System;
+using System.Runtime.CompilerServices;
+${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
+    public abstract class BaseService
+    {
+        public class MethodException : Exception
+        {
+            public string Code { get; }
+            public string SourceMethod { get; }
+
+            public MethodException(string code, string sourceMethod, Exception inner = null)
+                : base(sourceMethod, inner)
+            {
+                Code = code;
+                SourceMethod = sourceMethod;
+            }
+        }
+    }
+${nameSpace.trim() != '' ? `}` : ''}
+    `)
+
+        result.fileName.push(`BaseService.cs`)
+
+
+
+        return result
+    }
+
     else {
         return {
             export: false
@@ -345,31 +539,52 @@ function header() {
     const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     dformat = `${dt.getDate()}-${month[dt.getMonth()]}-${dt.getFullYear()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
 
-    let genDateStr = `Generate Date : ${dformat}`
-    let headerStr = `Generate By Genarate MVC : Ver ${systemConfig.description.version} (Developed by ${systemConfig.description.developer}) | ${genDateStr}`
-    let frame = ``
-    for (let i = 1; i <= 5; i++) {
-        if (i === 1 || i === 5) {
-            frame += '##########'
-            headerStr.split('').map(() => {
-                frame += '#'
-            })
-        }
-        else if (i === 2 || i === 4) {
-            frame += '#    '
-            headerStr.split('').map(() => {
-                frame += ' '
-            })
-            frame += '    #'
-        }
-        else if (i === 3) {
-            frame += '#    ' + headerStr + '    #'
-        }
+    // let genDateStr = `Generate Date : ${dformat}`
+    // let headerStr = `Generate By Genarate MVC : Ver ${systemConfig.description.version} (Developed by ${systemConfig.description.developer}) | ${genDateStr}`
 
-        frame += '\n'
-    }
+    // let frame = ``
+    // for (let i = 1; i <= 5; i++) {
+    //     if (i === 1 || i === 5) {
+    //         frame += '##########'
+    //         headerStr.split('').map(() => {
+    //             frame += '#'
+    //         })
+    //     }
+    //     else if (i === 2 || i === 4) {
+    //         frame += '#    '
+    //         headerStr.split('').map(() => {
+    //             frame += ' '
+    //         })
+    //         frame += '    #'
+    //     }
+    //     else if (i === 3) {
+    //         frame += '#    ' + headerStr + '    #'
+    //     }
 
-    return frame
+    //     frame += '\n'
+    // }
+
+    // return frame
+
+    const now = new Date();
+
+    const pad = (n) => n.toString().padStart(2, '0');
+
+    const formattedDate =
+        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
+    const lines = [
+        "===============================================================================",
+        "",
+        `Generator : ${systemConfig.description.titleHeader} v${systemConfig.description.version}`,
+        `Author    : ${systemConfig.description.developer}`,
+        `Generated : ${dformat} (Asia/Bangkok)`,
+        '',
+        "==============================================================================="
+    ];
+    let h = lines.map(line => `# ${line}`).join("\n");
+    return h + '\n';
 }
 
 function nodejsVO_EXE(dataDescription) {
@@ -1097,6 +1312,748 @@ class ${className}Controller extends ResourceController
     return result
 }
 
+function dotNet4_5Controller(dataDescription,nameSpace = '') {
+    let className = ''
+    dataDescription.tbName.split('_').forEach(str => {
+        // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
+        str.charAt(0).toUpperCase() + str.slice(1);
+        className += str.charAt(0).toUpperCase() + str.slice(1)
+    });
+
+    let instanceService = `${className[0].toLowerCase() + className.slice(1)}Service`
+    let instanceModel = `${className[0].toLowerCase() + className.slice(1)}Model`
+    let result = {
+        export: true,
+        content: '',
+        fileName: ''
+    }
+    let content = `/*\n${header()}*/
+using System;
+using System.Collections.Generic;
+using System.Web.Mvc;
+${nameSpace.trim() != '' ? `using ${nameSpace.trim()}.Models;\nusing ${nameSpace.trim()}.Services;\nusing MethodException = ${nameSpace.trim()}.Services.BaseService.MethodException;` : ''}
+
+${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
+    public class ${className}Controller : Controller
+    {
+        private class DataResponse
+        {
+            public Boolean Succress { get; set; }
+            public object Message { get; set; }
+            public List<Dictionary<string, object>> Data { get; set; }
+            public object Error { get; set; }
+        }
+
+        // GET: /${className}/get?id=1
+        [HttpGet]
+        public JsonResult get(int id = 0)
+        {
+
+            try
+            {
+                var ${instanceService} = new ${className}Service();
+                var ${instanceModel} = new SurveyDiffReasonModel();
+                var result = new DataResponse()
+                {
+                    Succress = true,
+                    /*
+                    Message = new
+                    {
+                        API_Version = "v1.0.0",
+                        Code = "001",
+                        Message = "Success"
+                    }
+                    */
+                };
+
+                if (${instanceService}.Get(id) != null)
+                {
+                    ${instanceService}.Result.AssignTo(${instanceModel});
+                    result.Data = new List<Dictionary<string, object>> { ${instanceModel}.ToDict() };
+                }
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (MethodException ex)
+            {
+
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Error = new { Code = ex.Code, Source = ex.SourceMethod }
+
+                };
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        // POST: /${className}/add
+        // Content-Type: application/json
+        [HttpPost]
+        public JsonResult add(${className}Model data)
+        {
+
+            if (data == null)
+            {
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Message = new { Message = "Invalid body" },
+
+                };
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+
+            try
+            {
+                var ${instanceService} = new ${className}Service();
+                var ${instanceModel} = new ${className}Model();
+                var result = new DataResponse();
+                if (${instanceService}.Add(data) != null)
+                {
+                    ${instanceService}.Result.AssignTo(${instanceModel});
+                    result.Succress = true;
+                    /*
+                    Message = new
+                    {
+                        API_Version = "v1.0.0",
+                        Code = "001",
+                        Message = "Success"
+                    }
+                    */
+                    result.Data = new List<Dictionary<string, object>> { ${instanceModel}.ToDict() };
+                }
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (MethodException ex)
+            {
+
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Error = new { Code = ex.Code, Source = ex.SourceMethod }
+
+                };
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        // POST: /${className}/edit
+        [HttpPost]
+        public JsonResult edit(${className}Model data)
+        {
+            if (data == null)
+            {
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Message = new { Message = "Invalid body" },
+
+                };
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+
+            try
+            {
+                var ${instanceService} = new ${className}Service();
+                var ${instanceModel} = new ${className}Model();
+                var result = new DataResponse();
+                if (${instanceService}.Edit(data) != null)
+                {
+                    ${instanceService}.Result.AssignTo(${instanceModel});
+                    result.Succress = true;
+                    /*
+                    Message = new
+                    {
+                        API_Version = "v1.0.0",
+                        Code = "001",
+                        Message = "Success"
+                    }
+                    */
+                    result.Data = new List<Dictionary<string, object>> { ${instanceModel}.ToDict() };
+                }
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+
+            catch (MethodException ex)
+            {
+
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Error = new { Code = ex.Code, Source = ex.SourceMethod }
+
+                };
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        // GET: /${className}/search?param1=value1&param2=value2.......
+        [HttpGet]
+        public JsonResult search(${className}Model data)
+        {
+            try
+            {
+                var ${instanceService} = new ${className}Service();
+                ${instanceService}.Search(data);
+                var result = new DataResponse()
+                {
+                    Succress = true,
+                    /*
+                    Message = new
+                    {
+                        API_Version = "v1.0.0",
+                        Code = "001",
+                        Message = "Success"
+                    }
+                    */
+                    Data =  ${instanceService}.Dataset ?? new List<Dictionary<string, object>>()
+
+                };
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (MethodException ex)
+            {
+
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Error = new { Code = ex.Code, Source = ex.SourceMethod }
+                };
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        // POST: /${className}/delete
+        // Content-Type: application/json
+        [HttpPost]
+        public JsonResult delete(${className}Model data)
+        {
+
+            if (data == null)
+            {
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Message = new { Message = "Invalid body" },
+                };
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+
+            try
+            {
+                var ${instanceService} = new ${className}Service();
+
+                var result = new DataResponse()
+                {
+                    Succress = ${instanceService}.Delete(data),
+                    /*
+                    Message = new
+                    {
+                        API_Version = "v1.0.0",
+                        Code = "001",
+                        Message = "Success"
+                    }
+                    */
+                };
+
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+            catch (MethodException ex)
+            {
+                var result = new DataResponse()
+                {
+                    Succress = false,
+                    Error = new { Code = ex.Code, Source = ex.SourceMethod }
+                };
+                return Json(result, JsonRequestBehavior.AllowGet);
+            }
+        }
+    }
+${nameSpace.trim() != '' ? `}` : ''}
+    `;
+
+
+
+
+    result.content = content;
+    result.fileName = `${className}Controller.cs`
+    return result
+}
+
+function dotNet4_5_VO_EXE(dataDescription, nameSpace = '') {
+    console.log({ dataDescription, nameSpace })
+
+    let tbFullName = `${dataDescription.databaseName}.dbo.${dataDescription.tbName}`
+    let className = ''
+    dataDescription.tbName.split('_').forEach(str => {
+        // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
+        str.charAt(0).toUpperCase() + str.slice(1);
+        className += str.charAt(0).toUpperCase() + str.slice(1)
+    });
+    let result = {
+        export: true,
+        content: [],
+        fileName: []
+    }
+    let content = '';
+
+    let paramsListEXE = {
+        'add': '',
+        'edit': '',
+        'search': ''
+    }
+
+    let property = ''
+    let methodAssignTo = ''
+    let mapResult = ''
+    // Construct
+    dataDescription.dataSet.forEach(field => {
+        function genType(field) {
+            const t = (field.FieldType || '').toLowerCase().trim();
+            const isNullable = !!field.IsNullable;
+
+            const nullable = (csType, isValueType = true) => {
+                if (!isNullable) return csType;
+                if (!isValueType) return csType; // string/byte[] ไม่ต้อง ?
+                return `${csType}?`;
+            };
+
+            // Date/Time => string ตามที่คุณต้องการ
+            if (['date', 'datetime', 'datetime2', 'smalldatetime', 'time', 'datetimeoffset'].includes(t)) {
+                return nullable('string', false);
+            }
+
+            // string types
+            if (['char', 'varchar', 'nchar', 'nvarchar', 'text', 'ntext', 'xml'].includes(t)) {
+                return nullable('string', false);
+            }
+
+            // Boolean
+            if (t === 'bit') return nullable('bool', true);
+
+            // Integers
+            if (t === 'tinyint') return nullable('int', true);
+            if (t === 'smallint') return nullable('int', true);
+            if (t === 'int') {
+                return nullable(`int${field.FieldName == 'DeleteBy' ? '?' : ''}`, true);
+            }
+            if (t === 'bigint') return nullable('int', true);
+
+            // Decimal / Numeric / Money
+            if (['decimal', 'numeric', 'money', 'smallmoney'].includes(t)) return nullable('decimal', true);
+
+            // Floating
+            if (t === 'float') return nullable('double', true);
+            if (t === 'real') return nullable('float', true);
+
+            // Guid
+            if (t === 'uniqueidentifier') return nullable('Guid', true);
+
+            // Binary / Blob
+            if (['binary', 'varbinary', 'image', 'rowversion', 'timestamp'].includes(t)) return 'byte[]';
+
+            // fallback
+            return 'object';
+        }
+
+        function genInitValue(field, csType) {
+            const isNullable = !!field.IsNullable;
+            const t = (field.FieldType || '').toLowerCase().trim();
+
+            // ถ้า nullable (value type) -> ไม่ต้อง init (default = null)
+            // แต่ string/byte[] ถึง nullable ก็ไม่จำเป็นต้อง init
+            if (isNullable) {
+                // ถ้าคุณอยาก “ให้ nullable string เป็น ""” ก็แก้ตรงนี้ได้
+                return null; // ไม่ใส่ "= ..."
+            }
+
+            // csType อาจเป็น "int?" แต่กรณีไม่ nullable จะไม่เกิด
+            switch (csType) {
+                case 'string':
+                    return '= "";';
+                case 'bool':
+                    return '= false;';
+                case 'byte':
+                case 'short':
+                case 'int':
+                case 'long':
+                    return '= 0;';
+                case 'decimal':
+                    return '= 0m;';
+                case 'float':
+                    return '= 0f;';
+                case 'double':
+                    return '= 0d;';
+                case 'Guid':
+                    return '= Guid.Empty;';
+                case 'byte[]':
+                    // แล้วแต่คุณ: new byte[0] หรือ null
+                    return '= new byte[0];';
+                case 'object':
+                    return '= null;';
+                default:
+                    // กันพลาด: ถ้าเป็น value type อื่น ๆ ให้ไม่ init
+                    return null;
+            }
+        }
+
+        function genSqlParameter(field) {
+            const typeMap = {
+                nvarchar: "SqlDbType.NVarChar",
+                varchar: "SqlDbType.VarChar",
+                int: "SqlDbType.Int",
+                bigint: "SqlDbType.BigInt",
+                smallint: "SqlDbType.SmallInt",
+                tinyint: "SqlDbType.TinyInt",
+                bit: "SqlDbType.Bit",
+                datetime: "SqlDbType.DateTime",
+                date: "SqlDbType.Date",
+                decimal: "SqlDbType.Decimal",
+                numeric: "SqlDbType.Decimal"
+            };
+
+            const sqlType = typeMap[field.FieldType.toLowerCase()] || "SqlDbType.Variant";
+            const name = field.FieldName;
+
+            // ถ้ามี size เช่น nvarchar(500)
+            if (field.FieldSize && field.FieldSize > 0) {
+                return `cmd.Parameters.Add("@${name}", ${sqlType}, ${field.FieldSize}).Value = data.${name};`;
+            }
+
+            return `cmd.Parameters.Add("@${name}", ${sqlType}).Value = data.${name};`;
+        }
+
+        function genMapResultLine(field, options = {}) {
+            const {
+                resultVar = "this.Result",
+                readerVar = "reader",
+                // กำหนดว่าฟิลด์นี้เป็น nullable int? (เช่น DeleteBy)
+                nullableIntFields = new Set(["DeleteBy"]),
+                // กำหนดว่าฟิลด์นี้เป็น string ที่อยากให้ default เป็น null (เช่น DeleteWhen)
+                nullStringFields = new Set(["DeleteWhen"]),
+            } = options;
+
+            const name = field.FieldName;
+            const type = String(field.FieldType || "").toLowerCase();
+
+            const isNullableInt = nullableIntFields.has(name);
+            const isNullString = nullStringFields.has(name);
+
+            const col = `${readerVar}["${name}"]`;
+            const assignLeft = `${resultVar}.${name}`;
+
+            // string
+            if (["nvarchar", "varchar", "nchar", "char", "text", "ntext"].includes(type)) {
+                const defaultVal = isNullString ? "null" : `""`;
+                return `${assignLeft} = ${col} == DBNull.Value ? ${defaultVal} : ${col}.ToString();`;
+            }
+
+            // int family
+            if (["int", "smallint", "tinyint"].includes(type)) {
+                if (isNullableInt) {
+                    return `${assignLeft} = ${col} == DBNull.Value ? (int?)null : Convert.ToInt32(${col});`;
+                }
+                return `${assignLeft} = ${col} == DBNull.Value ? 0 : Convert.ToInt32(${col});`;
+            }
+
+            // bigint -> Int64
+            if (type === "bigint") {
+                return `${assignLeft} = ${col} == DBNull.Value ? 0 : Convert.ToInt64(${col});`;
+            }
+
+            // bit -> bool
+            if (type === "bit") {
+                return `${assignLeft} = ${col} == DBNull.Value ? false : Convert.ToBoolean(${col});`;
+            }
+
+            // decimal/numeric
+            if (["decimal", "numeric", "money", "smallmoney"].includes(type)) {
+                return `${assignLeft} = ${col} == DBNull.Value ? 0 : Convert.ToDecimal(${col});`;
+            }
+
+            // datetime/date/time -> (ในโค้ดคุณเก็บเป็น string) => ToString()
+            if (["datetime", "datetime2", "smalldatetime", "date", "time"].includes(type)) {
+                // คุณตัวอย่าง: AddWhen default "" , DeleteWhen default null
+                const defaultVal = isNullString ? "null" : `""`;
+                return `${assignLeft} = ${col} == DBNull.Value ? ${defaultVal} : ${col}.ToString();`;
+            }
+
+            // fallback
+            return `${assignLeft} = ${col} == DBNull.Value ? null : ${col};`;
+        }
+        const csType = genType(field);
+
+        // if (['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType)) {
+        //     initValue = '0;'
+        // }
+        // // else if (['date', 'datetime'].includes(field.FieldType)) {
+        // //     initValue = 'date("Y-m-d H:i:s");'
+        // // }
+        // else {
+        //     initValue = '"";'
+        // }
+        // console.log({field})
+
+        // console.log(genMapResultLine(field))
+        mapResult += `  ${genMapResultLine(field)}
+        `
+
+        property += `   public ${genType(field)} ${field.FieldName} { get; set; } ${field.FieldName.toLowerCase().includes('delete') ? '' : genInitValue(field, csType)}
+        `
+        methodAssignTo += `     destination.${field.FieldName} = this.${field.FieldName};
+        `
+
+
+
+        if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
+            if (field.FieldName == 'ID') {
+                paramsListEXE.edit += `          ${genSqlParameter(field)}
+`
+            }
+            else if (field.FieldName == 'AddBy') {
+                paramsListEXE.add += `          ${genSqlParameter(field)}
+`
+            }
+            else if (field.FieldName == 'UpdateBy') {
+                paramsListEXE.edit += `         ${genSqlParameter(field)}
+`
+            }
+            else {
+                paramsListEXE.add += `          ${genSqlParameter(field)}
+`
+                paramsListEXE.search += `       ${genSqlParameter(field)}
+`
+                paramsListEXE.edit += `         ${genSqlParameter(field)}
+`
+            }
+
+
+
+        }
+
+
+
+        //         paramsListEXE += `          $DataVO->${field.FieldName},
+        // `
+    });
+
+
+    content = `/*\n${header()}*/
+using System;
+${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Models\n{` : ''}
+    public class ${className}Model : BaseModel
+    {
+    ${property}
+        public void AssignTo(${className}Model destination)
+        {
+        ${methodAssignTo}
+        }
+    }
+${nameSpace.trim() != '' ? `}` : ''}
+    `
+    result.content.push(content)
+    result.fileName.push(`${className}Model.cs`)
+    // จบ VO
+    // -----------------------------------------------------------
+
+
+
+    content = `/*\n${header()}*/
+
+using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Collections.Generic;
+${nameSpace.trim() != '' ? `using ${nameSpace.trim()}.Models;` : ''}
+
+${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
+    public class ${className}Service : BaseService
+    {
+        public ${className}Model Result { get; private set; } = new ${className}Model();
+        public List<Dictionary<string, object>> Dataset { get; private set; }
+
+        public ${className}Model Get(int id)
+        {
+            if (id <= 0) return null;
+
+            const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_get";
+            try
+            {
+                using (SqlConnection conn = DatabaseConnection.ConnectToDB())
+                using (SqlCommand cmd = new SqlCommand(procedureName, conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+                    cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+
+                    if (conn.State != ConnectionState.Open)
+                    conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (!reader.Read())
+                            return null;
+
+                        MapResult(reader);
+                        return Result;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MethodException("500", "${className}Service.Get", ex);
+            }
+        }
+
+        public ${className}Model Add(${className}Model data)
+        {
+            const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_add";
+
+            try
+            {
+                using (SqlConnection conn = DatabaseConnection.ConnectToDB())
+                using (SqlCommand cmd = new SqlCommand(procedureName, conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    ${paramsListEXE.add}
+
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (!reader.Read())
+                            return null;
+
+                        return this.Get(reader["ID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ID"]));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MethodException("500", "${className}Service.Add", ex);
+            }   
+        }
+
+        public ${className}Model Edit(${className}Model data)
+        {
+
+            const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_edit";
+
+            try
+            {
+                using (SqlConnection conn = DatabaseConnection.ConnectToDB())
+                using (SqlCommand cmd = new SqlCommand(procedureName, conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    ${paramsListEXE.edit}
+
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        return this.Get(data.ID);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MethodException("500", "${className}Service.Edit", ex);
+            }   
+        }
+
+        public void Search(${className}Model data)
+        {
+            const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_search";
+
+            try
+            {
+                using (SqlConnection conn = DatabaseConnection.ConnectToDB())
+                using (SqlCommand cmd = new SqlCommand(procedureName, conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    ${paramsListEXE.search}
+
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        this.Dataset = DBService.ReadData(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MethodException("500", "${className}Service.Search", ex);
+            }
+        }
+
+        public Boolean Delete(${className}Model data)
+        {
+            const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_delete";
+            try
+            {
+                using (SqlConnection conn = DatabaseConnection.ConnectToDB())
+                using (SqlCommand cmd = new SqlCommand(procedureName, conn))
+                {
+                    cmd.CommandType = CommandType.StoredProcedure;
+
+                    cmd.Parameters.Add("@ID", SqlDbType.Int).Value = data.ID;
+                    cmd.Parameters.Add("@DeleteBy", SqlDbType.Int).Value = data.DeleteBy;
+
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (this.Get(data.ID) != null && this.Result.DeleteWhen != null)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MethodException("500", "${className}Service.Delete", ex);
+            }
+        }
+
+        private void MapResult(SqlDataReader reader)
+        {
+        ${mapResult}
+        }
+
+    }
+
+    
+${nameSpace.trim() != '' ? `}` : ''}
+    `
+    result.content.push(content)
+    result.fileName.push(`${className}Service.cs`)
+    // จบ EXE
+    // -----------------------------------------------------------
+
+
+    return result
+}
+
+
 
 function storeProcedure(dataDescription) {
     let result = {
@@ -1165,10 +2122,10 @@ GO
         dataDescription.dataSet.forEach(row => {
             fieldName_List.push(row.FieldName)
             let type = ''
-            if (row.FieldType == 'varchar' || row.FieldType == 'nvarchar' || row.FieldType == 'char' || row.FieldType == 'nchar') {
+            if (['varchar', 'nvarchar', 'char', 'nchar'].includes(row.FieldType)) {
                 type = `${row.FieldType}(${row.FieldSize == -1 ? 'max' : row.FieldSize})  = NULL`
             }
-            else if (row.FieldType == 'numeric' || row.FieldType == 'decimal') {
+            else if ([, 'numeric', 'decimal',].includes(row.FieldType)) {
                 type = `${row.FieldType}(${row.FieldSize},${row.NumericScale == null ? 0 : row.NumericScale})  = NULL`
             }
             else {
@@ -1200,10 +2157,12 @@ GO
                 }
 
                 else if (row.FieldName == 'DeleteBy') {
-                    // paramsSp.delete.push(paramName)
+                    paramsSp.delete.push(paramName)
                     processAdd.fields.push(row.FieldName)
                     processAdd.values.push(`NULL`)
                 }
+
+
 
                 else {
                     paramsSp.search.push(paramName)
@@ -1216,15 +2175,15 @@ GO
                     processEdit.set.push(`${row.FieldName} = @${row.FieldName}`)
 
 
-                    if (row.FieldType == 'varchar' || row.FieldType == 'nvarchar' || row.FieldType == 'char' || row.FieldType == 'nchar') {
+                    if (['varchar', 'nvarchar', 'char', 'nchar'].includes(row.FieldType)) {
                         conditionSp.search.push(`((isnull(@${row.FieldName},'') = '') OR (${row.FieldName} LIKE '%' + @${row.FieldName} + '%'))`)
                     }
-                    else if (row.FieldType == 'numeric' || row.FieldType == 'decimal' || row.FieldType == 'int' || row.FieldType == 'float') {
+                    else if (['tinyint', 'numeric', 'decimal', 'float'].includes(row.FieldType)) {
                         conditionSp.search.push(`((isnull(@${row.FieldName},0) = 0) OR (${row.FieldName} = @${row.FieldName}))`)
                     }
-                    else {
-                        conditionSp.search.push(`((@${row.FieldName} = null) OR (${row.FieldName} = @${row.FieldName}))`)
-                    }
+                    // else {
+                    //     conditionSp.search.push(`((@${row.FieldName} = null) OR (${row.FieldName} = @${row.FieldName}))`)
+                    // }
                 }
             }
             else {
@@ -1340,6 +2299,7 @@ BEGIN
 
     UPDATE dbo.${dataDescription.tbName}
     SET 
+        DeleteBy = @DeleteBy,
         DeleteWhen = GETDATE()
     WHERE ID = @ID   
 END
@@ -1455,11 +2415,14 @@ ${createIdx}
 }
 
 
+module.exports.dbService = dbService
 module.exports.baseVO_EXE = baseVO_EXE
 module.exports.nodejsVO_EXE = nodejsVO_EXE
 module.exports.nextjsVO_EXE = nextjsVO_EXE
 module.exports.pythonVO_EXE = pythonVO_EXE
 module.exports.codeigniterVO_EXE = codeigniterVO_EXE
 module.exports.codeigniterController = codeigniterController
+module.exports.dotNet4_5Controller = dotNet4_5Controller
+module.exports.dotNet4_5_VO_EXE = dotNet4_5_VO_EXE
 module.exports.storeProcedure = storeProcedure
 module.exports.indexTable = indexTable

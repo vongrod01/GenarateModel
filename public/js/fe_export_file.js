@@ -20,15 +20,16 @@ function downloadFile(fileName, content) {
 document.getElementById('btnExportBaseClass').onclick = function () {
     reqAndRes('/contentBase', 'GET', {
         programming: document.getElementById('selProgramming').value,
-        provider: objConnectDesciption.connectionDB.provider
+        provider: objConnectDesciption.connectionDB.provider,
+        nameSpace: document.getElementById('edtNameSpace').value
     },
         async (dataRes) => {
-            if(Array.isArray(dataRes.content)){
+            if (Array.isArray(dataRes.content)) {
                 for (let i = 0; i < dataRes.content.length; i++) {
-                    await downloadFile(dataRes.fileName[i], dataRes.content[i])   
+                    await downloadFile(dataRes.fileName[i], dataRes.content[i])
                 }
-            }else{
-                await downloadFile(dataRes.fileName, dataRes.content)  
+            } else {
+                await downloadFile(dataRes.fileName, dataRes.content)
             }
         }
     )
@@ -43,6 +44,7 @@ document.getElementById('btnExportVO_EXE').onclick = async function () {
         connDetail.databaseName = databaseName
         connDetail.tbName = tbName
         connDetail.programming = document.getElementById('selProgramming').value
+        connDetail.nameSpace = document.getElementById('edtNameSpace').value
         exportVO_EXE(connDetail)
             .then((data) => {
                 // console.log(data)
@@ -52,6 +54,24 @@ document.getElementById('btnExportVO_EXE').onclick = async function () {
             })
         // console.log(elChk.value)
     });
+}
+document.getElementById('btnExportDBService').onclick = async function () {
+    reqAndRes('/contentDBService', 'GET', {
+        programming: document.getElementById('selProgramming').value,
+        provider: objConnectDesciption.connectionDB.provider,
+        nameSpace: document.getElementById('edtNameSpace').value
+    },
+        async (dataRes) => {
+            if (Array.isArray(dataRes.content)) {
+                for (let i = 0; i < dataRes.content.length; i++) {
+                    await downloadFile(dataRes.fileName[i], dataRes.content[i])
+                }
+            } else {
+                await downloadFile(dataRes.fileName, dataRes.content)
+            }
+        }
+    )
+
 }
 
 document.getElementById('btnExportControl').onclick = async function () {
@@ -63,6 +83,7 @@ document.getElementById('btnExportControl').onclick = async function () {
         connDetail.databaseName = databaseName
         connDetail.tbName = tbName
         connDetail.programming = document.getElementById('selProgramming').value
+        connDetail.nameSpace = document.getElementById('edtNameSpace').value
         exportController(connDetail)
             .then((data) => {
                 // console.log(data)
@@ -117,29 +138,29 @@ document.getElementById('btnExportIndexTable').onclick = async function () {
 async function exportVO_EXE(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
-
+            console.log("exportVO_EXE : ", { connDetail })
             await reqAndRes('/contentVO_EXE', 'GET', connDetail, async (dataRes) => {
-                if(dataRes.export){
-                    if(Array.isArray(dataRes.content)){
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
-                        
+
                             // downloadFilesList.push(dataRes)
-                        
+
                             await downloadFile(dataRes.fileName[i], dataRes.content[i])
-                        
+
                         }
                         resolve(`export ${dataRes.fileName[0]} succesfuly!`)
-                    }else{
+                    } else {
 
-                        
+
                         downloadFilesList.push(dataRes)
-                        
+
                         await downloadFile(dataRes.fileName, dataRes.content)
-                        
+
                         resolve(`export ${dataRes.fileName} succesfuly!`)
                     }
                 }
-                else{
+                else {
                     resolve(`not export!`)
                 }
             })
@@ -154,27 +175,27 @@ async function exportController(connDetail) {
         try {
 
             await reqAndRes('/contentController', 'GET', connDetail, async (dataRes) => {
-                if(dataRes.export){
-                    if(Array.isArray(dataRes.content)){
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
-                        
+
                             // downloadFilesList.push(dataRes)
-                        
+
                             await downloadFile(dataRes.fileName[i], dataRes.content[i])
-                        
+
                         }
                         resolve(`export ${dataRes.fileName[0]} succesfuly!`)
-                    }else{
+                    } else {
 
-                        
+
                         downloadFilesList.push(dataRes)
-                        
+
                         await downloadFile(dataRes.fileName, dataRes.content)
-                        
+
                         resolve(`export ${dataRes.fileName} succesfuly!`)
                     }
                 }
-                else{
+                else {
                     resolve(`not export!`)
                 }
             })
@@ -189,27 +210,27 @@ async function exportStoreProcedure(connDetail) {
         try {
 
             await reqAndRes('/contentStoreProcedure', 'GET', connDetail, async (dataRes) => {
-                if(dataRes.export){
-                    if(Array.isArray(dataRes.content)){
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
-                        
+
                             // downloadFilesList.push(dataRes)
-                        
+
                             await downloadFile(dataRes.fileName[i], dataRes.content[i])
-                        
+
                         }
                         resolve(`export ${dataRes.fileName[0]} succesfuly!`)
-                    }else{
+                    } else {
 
-                        
+
                         downloadFilesList.push(dataRes)
-                        
+
                         await downloadFile(dataRes.fileName, dataRes.content)
-                        
+
                         resolve(`export ${dataRes.fileName} succesfuly!`)
                     }
                 }
-                else{
+                else {
                     resolve(`not export!`)
                 }
             })
@@ -224,27 +245,27 @@ async function exportIndexTable(connDetail) {
         try {
 
             await reqAndRes('/contentIndexTable', 'GET', connDetail, async (dataRes) => {
-                if(dataRes.export){
-                    if(Array.isArray(dataRes.content)){
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
-                        
+
                             // downloadFilesList.push(dataRes)
-                        
+
                             await downloadFile(dataRes.fileName[i], dataRes.content[i])
-                        
+
                         }
                         resolve(`export ${dataRes.fileName[0]} succesfuly!`)
-                    }else{
+                    } else {
 
-                        
+
                         downloadFilesList.push(dataRes)
-                        
+
                         await downloadFile(dataRes.fileName, dataRes.content)
-                        
+
                         resolve(`export ${dataRes.fileName} succesfuly!`)
                     }
                 }
-                else{
+                else {
                     resolve(`not export!`)
                 }
             })

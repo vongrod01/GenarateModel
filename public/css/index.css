@@ -2,7 +2,7 @@
   --h-header: 60px;
   --h-footer: 40px;
   --h-select: 100px;
-  --h-export: 50px;
+  --h-export: 100px;
   --h-content: calc(100vh - var(--h-header) - var(--h-footer) - var(--h-select) - var(--h-export) - 32px);
 
   --theme-color: transparent;
@@ -24,6 +24,17 @@ body{
 #pnlExport {
   height: var(--h-export);
   align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap : 5px;
+  .my-btn,.input-group{
+    height: 49% !important;
+  }
+  .input-group{
+    *{
+      height: 100% !important;
+    }
+  }
 }
 
 #pnlContent {

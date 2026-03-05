@@ -33,11 +33,11 @@
 
 
                 <div class="input-group me-2" style="width: 33%;">
-                    
+
                     <span for="selDatabaseProvider" class="input-group-text span-layout search-border text-end"
                         style="width: 120px;">
-                        
-                        
+
+
                         Provider</span>
                     <select class="form-select search-border" name="selDatabaseProvider" id="selDatabaseProvider">
                         <option value="mssql" selected>Microsoft SQL Server</option>
@@ -83,7 +83,7 @@
             </div>
         </div>
 
-      
+
 
         <div class="my-btn h-100" style="align-self: center;" onclick="connectDB()">
             <h4 style="align-self: center;"><i class="bi bi-database-fill-check me-1"></i>Connect</h4>
@@ -96,32 +96,39 @@
             <span for="selProgramming"
                 class="input-group-text span-layout search-border text-end">Framework/Programming</span>
             <select class="form-select search-border" name="selProgramming" id="selProgramming">
-                <option value="nodejs" selected>Node.js</option>
-                <option value="laravel">Laravel 8</option>
+                <option value="nextjs" selected>NextJS</option>
+                <option value="nodejs" >Node.js</option>
+                <option value=".net 4.5" >.Net 4.5</option>
+                <!-- <option value="laravel">Laravel 8</option> -->
                 <option value="codeigniter4">Codeigniter 4</option>
                 <option value="python">Python</option>
                 <option value="javascript">JavaScript</option>
-                <option value="nextjs">NextJS</option>
             </select>
         </div>
 
-        <div class="my-btn" id="btnExportConnectionDB"><i class="bi bi-download me-1"></i>Connection DB</div>
-        
-        
+        <div class="input-group me-2" style="width: 15%;">
+            <span for="edtPort" class="input-group-text span-layout search-border text-end"
+                style="width: 120px;">Name Space</span>
+            <input type="text" class="form-control search-border" name="edtNameSpace" value='' id="edtNameSpace" />
+        </div>
+
+        <div class="my-btn" id="btnExportDBService"><i class="bi bi-download me-1"></i>DB Service</div>
+
+
         <div class="my-btn" id="btnExportBaseClass"><i class="bi bi-download me-1"></i>Model(Base)</div>
-        
+
         <div class="my-btn" id="btnExportVO_EXE"><i class="bi bi-download me-1"></i>Model(VO/EXE)</div>
-       
+
         <div class="my-btn" id="btnExportView"><i class="bi bi-download me-1"></i>View</div>
-        
+
         <div class="my-btn" id="btnExportControl"><i class="bi bi-download me-1"></i>Controller</div>
-        
+
         <div class="my-btn" id="btnExportStoreProce"><i class="bi bi-download me-1"></i>Store Procedure</div>
 
         <div class="my-btn" id="btnExportIndexTable"><i class="bi bi-download me-1"></i>Index Table</div>
 
-        
-        
+
+
         <!-- <button class="my-button" id="btn">Button</button> -->
     </div>
     <div class="box-shadow4 mb-2 m-1 rounded-2 p-2 d-flex justify-content-center" id="pnlContent">
@@ -226,21 +233,21 @@
     //     spacing: 13.00
     // })
 
-//     VANTA.FOG({
-//   el: "#my-body",
-//   mouseControls: true,
-//   touchControls: true,
-//   gyroControls: false,
-//   minHeight: 200.00,
-//   minWidth: 200.00,
-//   highlightColor: 0x5f5f5c,
-//   midtoneColor: 0x6b3535,
-//   lowlightColor: 0xd0d31,
-//   baseColor: 0x0,
-//   blurFactor: 0.45,
-//   speed: 1.30,
-//   zoom: 2.60
-// })
+    //     VANTA.FOG({
+    //   el: "#my-body",
+    //   mouseControls: true,
+    //   touchControls: true,
+    //   gyroControls: false,
+    //   minHeight: 200.00,
+    //   minWidth: 200.00,
+    //   highlightColor: 0x5f5f5c,
+    //   midtoneColor: 0x6b3535,
+    //   lowlightColor: 0xd0d31,
+    //   baseColor: 0x0,
+    //   blurFactor: 0.45,
+    //   speed: 1.30,
+    //   zoom: 2.60
+    // })
 </script>
 <script src="js/helper.js"></script>
 <script src="js/fe_connect_db.js"></script>
