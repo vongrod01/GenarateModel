@@ -4,253 +4,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="css/index.css">
-    <link rel="stylesheet" href="css/global.css">
-    <link rel="stylesheet" href="bootstrap/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+    <link rel="stylesheet" href="css/glass.css">
     <link rel="icon" type="image/x-icon" href="/img/icon-title.ico">
-    <!-- <script src="chart.js/dist/chart.umd.js"></script> -->
     <script src="jquery/dist/jquery.min.js"></script>
-    <script src="bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
-
-    <title>Genarate Code</title>
+    <title><%=titleHeader%></title>
 </head>
 
-<body id="my-body">
-    <header class="mb-2" id="pnlHeader">
-        <span id="txtHeader">
-            <%=titleHeader%>
-        </span>
-    </header>
-    <div class="box-shadow4 m-1 mb-2 rounded-2 p-2 d-flex justify-content-center" id="pnlSelect">
-        <div class="w-75">
+<body>
+    <div class="wallpaper" aria-hidden="true">
+        <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span><span class="blob b4"></span>
+    </div>
 
-            <div class="d-flex justify-content-center mb-2">
+    <!-- ============ 1 · CONNECT ============ -->
+    <section class="screen-connect">
+        <header class="connect-top">
+            <div class="glass brand-pill">
+                <span class="app-icon"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/><path d="M13.5 4l-3 16"/></svg></span>
+                <span class="brand-name"><%=titleHeader%></span>
+                <span class="version-chip"><%=version%></span>
+            </div>
+        </header>
 
+        <main class="connect-main">
+            <form class="glass connect-card" id="frmConnect" autocomplete="on">
+                <div class="connect-head">
+                    <div class="hero-icon"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div>
+                    <h1>Connect to a database</h1>
+                    <p>Generate models, controllers and stored procedures straight from your schema.</p>
+                </div>
 
+                <input type="hidden" id="selDatabaseProvider" value="mssql">
+                <div class="segmented" role="radiogroup" aria-label="Provider" id="segProvider">
+                    <button type="button" role="radio" aria-checked="true" data-value="mssql" data-port="1433">SQL Server</button>
+                    <button type="button" role="radio" aria-checked="false" data-value="mysql" data-port="3306">MySQL</button>
+                    <button type="button" role="radio" aria-checked="false" data-value="postgresql" data-port="5432">PostgreSQL</button>
+                </div>
 
+                <div class="group">
+                    <span class="group-label">Server</span>
+                    <div class="group-box">
+                        <label class="group-row"><span>Host</span><input class="field" type="text" id="edtHost" name="edtHost" placeholder="localhost" required></label>
+                        <label class="group-row"><span>Port</span><input class="field mono" type="number" id="edtPort" name="edtPort" value="1433" required></label>
+                    </div>
+                </div>
 
-                <div class="input-group me-2" style="width: 33%;">
+                <div class="group">
+                    <span class="group-label">Sign in</span>
+                    <div class="group-box">
+                        <label class="group-row"><span>User</span><input class="field" type="text" id="edtUser" name="edtUser" placeholder="username" autocomplete="username"></label>
+                        <label class="group-row"><span>Password</span><input class="field" type="password" id="edtPassword" name="edtPassword" placeholder="Required" autocomplete="current-password"></label>
+                    </div>
+                </div>
 
-                    <span for="selDatabaseProvider" class="input-group-text span-layout search-border text-end"
-                        style="width: 120px;">
+                <button type="submit" class="btn-primary btn-lg" id="btnConnect">
+                    <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7H6a5 5 0 0 0 0 10h3"/><path d="M15 7h3a5 5 0 0 1 0 10h-3"/><path d="M8 12h8"/></svg>
+                    <span>Connect</span>
+                </button>
+            </form>
+        </main>
 
+        <footer class="connect-foot">
+            <span>Developed by <%=developer%> · version <%=version%></span>
+        </footer>
+    </section>
 
-                        Provider</span>
-                    <select class="form-select search-border" name="selDatabaseProvider" id="selDatabaseProvider">
-                        <option value="mssql" selected>Microsoft SQL Server</option>
-                        <option value="mysql">MySQL</option>
-                        <option value="postgresql">PostgreSQL</option>
+    <!-- ============ 2 · WORKSPACE ============ -->
+    <section class="screen-workspace">
+        <header class="glass toolbar">
+            <div class="toolbar-group">
+                <span class="app-icon app-icon-lg"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/><path d="M13.5 4l-3 16"/></svg></span>
+                <span class="brand-name"><%=titleHeader%></span>
+                <span class="conn-chip"><span class="dot" aria-hidden="true"></span><span id="txtConnProvider">SQL Server</span> · <span class="mono" id="txtConnHost"></span></span>
+            </div>
+            <div class="toolbar-group">
+                <label class="tool-field">Target
+                    <select class="tool-select" id="selProgramming" name="selProgramming">
+                        <option value="nextjs" selected>Next.js</option>
+                        <option value="nodejs">Node.js</option>
+                        <option value=".net 4.5">.NET 4.5</option>
+                        <option value="codeigniter4">CodeIgniter 4</option>
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
                     </select>
+                </label>
+                <label class="tool-field">Namespace
+                    <input class="search mono" type="text" id="edtNameSpace" name="edtNameSpace" placeholder="MyCompany.App">
+                </label>
+                <button type="button" class="pill" id="btnDisconnect">Disconnect</button>
+            </div>
+        </header>
+
+        <div class="columns">
+            <nav class="glass panel panel-db" aria-label="Databases">
+                <div class="panel-head">
+                    <h2>Databases</h2>
+                    <span class="meta" id="txtDbCount"></span>
+                </div>
+                <label class="searchbox"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                    <span class="sr-only">Search databases</span>
+                    <input class="search" type="search" placeholder="Search" data-filter="#tbDatabaseList">
+                </label>
+                <div class="list-scroll">
+                    <table id="tbDatabaseList" class="list list-db">
+                        <thead class="sr-only"><tr><th>Database</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </nav>
+
+            <section class="glass panel panel-tables" aria-label="Tables">
+                <div class="panel-head">
+                    <h2>Tables</h2>
+                    <span class="meta" id="txtTableSummary"></span>
+                </div>
+                <div class="panel-tools">
+                    <label class="searchbox"><svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+                        <span class="sr-only">Search tables</span>
+                        <input class="search" type="search" placeholder="Search tables" data-filter="#tbTableList">
+                    </label>
+                    <label class="pill pill-accent select-all">
+                        <input type="checkbox" id="chkSelectAll" class="sr-only">
+                        <span id="txtSelectAll">Select all</span>
+                    </label>
+                </div>
+                <div class="list-scroll">
+                    <table id="tbTableList" class="list list-tables">
+                        <thead class="sr-only"><tr><th>Select</th><th>Table</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <aside class="glass panel panel-fields" aria-label="Fields">
+                <div class="panel-head panel-head-stack">
+                    <span class="eyebrow">Fields</span>
+                    <h2 id="txtFocusedTable">—</h2>
+                </div>
+                <div class="list-scroll fields-box">
+                    <table id="tbTableDesciption" class="fields">
+                        <thead>
+                            <tr><th>Name</th><th>Type</th><th>Define</th><th class="num">Size</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </aside>
+        </div>
+
+        <div class="glass action-bar" role="toolbar" aria-label="Export">
+            <span class="action-count" id="txtSelectedCount">No tables selected</span>
+            <span class="sep" aria-hidden="true"></span>
+            <button type="button" class="pill" id="btnExportVO_EXE">VO / EXE</button>
+            <button type="button" class="pill" id="btnExportControl">Controller</button>
+            <button type="button" class="pill" id="btnExportStoreProce">Stored Proc</button>
+            <button type="button" class="pill" id="btnExportIndexTable">Index</button>
+            <span class="sep" aria-hidden="true"></span>
+            <button type="button" class="pill" id="btnExportDBService">DB Service</button>
+            <button type="button" class="pill" id="btnExportBaseClass">Base</button>
+            <button type="button" class="btn-primary" id="btnOpenExport">
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
+                Export…
+            </button>
+        </div>
+    </section>
+
+    <!-- ============ 3 · EXPORT SHEET ============ -->
+    <div class="sheet-backdrop" id="pnlExportSheet" hidden>
+        <section class="sheet" role="dialog" aria-modal="true" aria-labelledby="txtExportTitle">
+            <div class="sheet-form" id="pnlExportForm">
+                <div class="sheet-head">
+                    <div>
+                        <h2 id="txtExportTitle">Export code</h2>
+                        <p id="txtExportContext"></p>
+                    </div>
+                    <button type="button" class="icon-btn" id="btnCloseExport" aria-label="Close">
+                        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                    </button>
+                </div>
+                <div class="chips" id="pnlExportTables"></div>
+
+                <div class="group">
+                    <span class="group-label">For each table</span>
+                    <div class="group-box">
+                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportVO_EXE" data-scope="table"><span><b>Model (VO / EXE)</b><small>Value object and executor class</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportControl" data-scope="table"><span><b>Controller</b><small>CRUD endpoints</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportStoreProce" data-scope="table"><span><b>Stored procedure</b><small>Insert, update, delete, select</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportIndexTable" data-scope="table"><span><b>Index table</b><small>CREATE INDEX script</small></span><i class="switch" aria-hidden="true"></i></button>
+                    </div>
                 </div>
 
-                <div class="input-group me-2" style="width: 33%;">
-                    <span for="edtHost" class="input-group-text span-layout search-border text-end"
-                        style="width: 120px;">Host</span>
-                    <input type="text" class="form-control search-border" name="edtHost" value="192.168.100.197"
-                        id="edtHost" />
-                </div>
-                <div class="input-group me-2" style="width: 33%;">
-                    <span for="edtPort" class="input-group-text span-layout search-border text-end"
-                        style="width: 80px;">Port</span>
-                    <input type="number" class="form-control search-border" name="edtPort" value=3306 id="edtPort" />
+                <div class="group">
+                    <span class="group-label">Project files · once</span>
+                    <div class="group-box">
+                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportDBService" data-scope="project"><span><b>DB Service</b><small>Connection and query helper</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportBaseClass" data-scope="project"><span><b>Model (Base)</b><small>Shared base class</small></span><i class="switch" aria-hidden="true"></i></button>
+                    </div>
                 </div>
 
-
-
+                <div class="sheet-foot">
+                    <span id="txtExportSummary"></span>
+                    <div class="sheet-actions">
+                        <button type="button" class="btn-secondary" id="btnCancelExport">Cancel</button>
+                        <button type="button" class="btn-primary btn-lg" id="btnDoExport">
+                            <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
+                            Download
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <div class="d-flex justify-content-center">
-
-                <div class="input-group me-2" style="width: 33%;">
-                    <span for="edtUser" class="input-group-text span-layout search-border text-end"
-                        style="width: 120px;">User</span>
-                    <input type="text" class="form-control search-border" name="edtUser" value="adisorn.vo"
-                        id="edtUser" />
-                </div>
-                <div class="input-group me-2" style="width: 33%;">
-                    <span for="edtPassword" class="input-group-text span-layout search-border text-end"
-                        style="width: 120px;">Password</span>
-                    <input type="password" class="form-control search-border" name="edtPassword" value="vongrod01"
-                        id="edtPassword" />
-                </div>
-                <div class="input-group me-2" style="width: 33%;">
-
-
+            <div class="sheet-done" id="pnlExportDone" hidden>
+                <div class="done-icon"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+                <h2 id="txtDoneTitle">Downloaded</h2>
+                <p>Saved to your Downloads folder.</p>
+                <div class="sheet-actions">
+                    <button type="button" class="btn-secondary" id="btnExportMore">Export more</button>
+                    <button type="button" class="btn-primary btn-lg" id="btnExportDone">Done</button>
                 </div>
             </div>
-        </div>
-
-
-
-        <div class="my-btn h-100" style="align-self: center;" onclick="connectDB()">
-            <h4 style="align-self: center;"><i class="bi bi-database-fill-check me-1"></i>Connect</h4>
-        </div>
-
-
+        </section>
     </div>
-    <div class="m-1 mb-2 p-2 d-flex" id="pnlExport">
-        <div class="input-group me-1" style="width: 25%;">
-            <span for="selProgramming"
-                class="input-group-text span-layout search-border text-end">Framework/Programming</span>
-            <select class="form-select search-border" name="selProgramming" id="selProgramming">
-                <option value="nextjs" selected>NextJS</option>
-                <option value="nodejs" >Node.js</option>
-                <option value=".net 4.5" >.Net 4.5</option>
-                <!-- <option value="laravel">Laravel 8</option> -->
-                <option value="codeigniter4">Codeigniter 4</option>
-                <option value="python">Python</option>
-                <option value="javascript">JavaScript</option>
-            </select>
-        </div>
 
-        <div class="input-group me-2" style="width: 15%;">
-            <span for="edtPort" class="input-group-text span-layout search-border text-end"
-                style="width: 120px;">Name Space</span>
-            <input type="text" class="form-control search-border" name="edtNameSpace" value='' id="edtNameSpace" />
-        </div>
+    <div class="toast" id="pnlToast" role="status" aria-live="polite" hidden></div>
 
-        <div class="my-btn" id="btnExportDBService"><i class="bi bi-download me-1"></i>DB Service</div>
-
-
-        <div class="my-btn" id="btnExportBaseClass"><i class="bi bi-download me-1"></i>Model(Base)</div>
-
-        <div class="my-btn" id="btnExportVO_EXE"><i class="bi bi-download me-1"></i>Model(VO/EXE)</div>
-
-        <div class="my-btn" id="btnExportView"><i class="bi bi-download me-1"></i>View</div>
-
-        <div class="my-btn" id="btnExportControl"><i class="bi bi-download me-1"></i>Controller</div>
-
-        <div class="my-btn" id="btnExportStoreProce"><i class="bi bi-download me-1"></i>Store Procedure</div>
-
-        <div class="my-btn" id="btnExportIndexTable"><i class="bi bi-download me-1"></i>Index Table</div>
-
-
-
-        <!-- <button class="my-button" id="btn">Button</button> -->
-    </div>
-    <div class="box-shadow4 mb-2 m-1 rounded-2 p-2 d-flex justify-content-center" id="pnlContent">
-        <div class="tb-content">
-            <table id="tbDatabaseList" class="table table-striped table-bordered table-hover w-100">
-                <thead class="position-sticky top-0">
-                    <tr>
-                        <th class="text-center align-middle" rowspan="3">Database</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-                </tbody>
-            </table>
-        </div>
-        <div class="ps-3 tb-content">
-            <table id="tbTableList" class="table table-striped table-bordered table-hover w-100">
-                <thead class="position-sticky top-0">
-                    <tr>
-
-                        <th class="text-center align-middle">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="" id="chkSelectAll">
-                            </div>
-                        </th>
-                        <th class="text-center align-middle" rowspan="2">Table</th>
-                    </tr>
-
-
-
-                </thead>
-                <tbody>
-
-                </tbody>
-            </table>
-        </div>
-        <div class="ps-3 tb-content">
-            <table id="tbTableDesciption" class="table table-striped table-bordered table-hover w-100">
-                <thead class="position-sticky top-0">
-                    <tr>
-                        <th class="text-center align-middle" colspan="4">Field</th>
-
-                    </tr>
-                    <tr>
-                        <th class="text-center align-middle">Name</th>
-                        <th class="text-center align-middle">Type</th>
-                        <th class="text-center align-middle">Type Define</th>
-                        <th class="text-center align-middle">Size</th>
-                    </tr>
-
-                </thead>
-                <tbody>
-
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <footer>
-        <span class="me-2 ps-1 pe-1" id="txtFooter">
-            Developed by <%=developer%> [version <%=version%>]
-        </span>
-    </footer>
-
+    <script src="js/helper.js"></script>
+    <script src="js/fe_connect_db.js"></script>
+    <script src="js/fe_export_file.js"></script>
+    <script src="js/ui.js"></script>
 </body>
-<!-- <script src="js/three.min.js"></script>
-<script src="js/vanta.birds.min.js"></script>
-<script src="js/vanta.net.min.js"></script>
-<script src="js/vanta.fog.min.js"></script> -->
-<script>
-    // VANTA.BIRDS({
-    //     el: "#my-body",
-    //     mouseControls: true,
-    //     touchControls: true,
-    //     gyroControls: false,
-    //     minHeight: 200.00,
-    //     minWidth: 200.00,
-    //     scale: 1.00,
-    //     scaleMobile: 1.00,
-    //     backgroundColor: 0x0,
-    //     color1: 0xFFDF00,
-    //     color2: 0xFF0000,
-    //     birdSize: 0.70,
-    //     wingSpan: 22.00,
-    //     speedLimit: 7.00,
-    //     separation: 48.00,
-    //     alignment: 31.00,
-    //     cohesion: 35.00
-    // })
-
-    // VANTA.NET({
-    //     el: "#my-body",
-    //     mouseControls: true,
-    //     touchControls: true,
-    //     gyroControls: false,
-    //     minHeight: 200.00,
-    //     minWidth: 200.00,
-    //     scale: 1.00,
-    //     scaleMobile: 1.00,
-    //     color: 0x9185aa,
-    //     backgroundColor: 0x0,
-    //     points: 13.00,
-    //     spacing: 13.00
-    // })
-
-    //     VANTA.FOG({
-    //   el: "#my-body",
-    //   mouseControls: true,
-    //   touchControls: true,
-    //   gyroControls: false,
-    //   minHeight: 200.00,
-    //   minWidth: 200.00,
-    //   highlightColor: 0x5f5f5c,
-    //   midtoneColor: 0x6b3535,
-    //   lowlightColor: 0xd0d31,
-    //   baseColor: 0x0,
-    //   blurFactor: 0.45,
-    //   speed: 1.30,
-    //   zoom: 2.60
-    // })
-</script>
-<script src="js/helper.js"></script>
-<script src="js/fe_connect_db.js"></script>
-<script src="js/fe_export_file.js"></script>
 
 </html>
