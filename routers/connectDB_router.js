@@ -3,8 +3,8 @@ const router = express.Router()
 const connMysql = require('../my_modules/mysql.js')
 const connMssql = require('../my_modules/mssql.js')
 
-router.get('/databaseList', async (req, res) => {
-    let req_json = req.query
+router.post('/databaseList', async (req, res) => {
+    let req_json = req.body
 
     let provider = req_json.provider;
     let user = req_json.user;
@@ -49,8 +49,8 @@ router.get('/databaseList', async (req, res) => {
     }
 })
 
-router.get('/tableList', async (req, res) => {
-    let req_json = req.query
+router.post('/tableList', async (req, res) => {
+    let req_json = req.body
     let provider = req_json.provider;
     let databaseName = req_json.databaseName;
     let user = req_json.user;
@@ -68,8 +68,8 @@ router.get('/tableList', async (req, res) => {
                 "host": host,
                 "port": port
             })
-            await mssql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${databaseName}'`)
-            res.json(mssql.dataSet)
+            await mysql.execSQL(`SELECT table_name AS TableName FROM information_schema.tables WHERE table_schema='${databaseName}'`)
+            res.json(mysql.dataSet)
         } catch (error) {
             console.log(error)
             res.json([])
@@ -233,8 +233,8 @@ USE information_schema;
     }
 }
 
-router.get('/tableDescription', async (req, res) => {
-    let req_json = req.query
+router.post('/tableDescription', async (req, res) => {
+    let req_json = req.body
     let dataRes = await TableDescription(req_json)
     res.json(dataRes)
 })

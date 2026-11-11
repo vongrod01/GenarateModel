@@ -3,16 +3,16 @@ const router = express.Router()
 const connectDB_router = require('./connectDB_router')
 const be_export_file = require('../my_modules/be_export_file')
 
-router.get('/contentDBService', async (req, res) => {
-    let req_json = req.query
+router.post('/contentDBService', async (req, res) => {
+    let req_json = req.body
     let programming = req_json.programming;
     let provider = req_json.provider;
    let nameSpace = req_json.nameSpace;
     res.json(be_export_file.dbService(programming,provider,nameSpace))
 })
 
-router.get('/contentBase', async (req, res) => {
-    let req_json = req.query
+router.post('/contentBase', async (req, res) => {
+    let req_json = req.body
     let programming = req_json.programming;
     let provider = req_json.provider;
     let nameSpace = req_json.nameSpace;
@@ -21,11 +21,10 @@ router.get('/contentBase', async (req, res) => {
 
 
 
-router.get('/contentVO_EXE', async (req, res) => {
+router.post('/contentVO_EXE', async (req, res) => {
 
-    let req_json = req.query
+    let req_json = req.body
     let nameSpace = req_json.nameSpace;
-    console.log(req_json)
     let dataDescription = {
         dataSet : await connectDB_router.TableDescription(req_json),
         tbName : req_json.tbName,
@@ -61,10 +60,9 @@ router.get('/contentVO_EXE', async (req, res) => {
     }
 
 })
-router.get('/contentController', async (req, res) => {
+router.post('/contentController', async (req, res) => {
 
-    let req_json = req.query
-    console.log(req_json)
+    let req_json = req.body
     let dataDescription = {
         dataSet : await connectDB_router.TableDescription(req_json),
         tbName : req_json.tbName,
@@ -97,10 +95,9 @@ router.get('/contentController', async (req, res) => {
 
 })
 
-router.get('/contentStoreProcedure', async (req, res) => {
+router.post('/contentStoreProcedure', async (req, res) => {
 
-    let req_json = req.query
-    console.log(req_json)
+    let req_json = req.body
     let dataDescription = {
         dataSet : await connectDB_router.TableDescription(req_json),
         tbName : req_json.tbName,
@@ -130,10 +127,9 @@ router.get('/contentStoreProcedure', async (req, res) => {
 
 })
 
-router.get('/contentIndexTable', async (req, res) => {
+router.post('/contentIndexTable', async (req, res) => {
 
-    let req_json = req.query
-    console.log(req_json)
+    let req_json = req.body
     let dataDescription = {
         dataSet : await connectDB_router.TableDescription(req_json),
         tbName : req_json.tbName,

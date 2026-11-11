@@ -18,7 +18,7 @@ function downloadFile(fileName, content) {
 
 
 document.getElementById('btnExportBaseClass').onclick = function () {
-    reqAndRes('/contentBase', 'GET', {
+    reqAndRes('/contentBase', 'POST', {
         programming: document.getElementById('selProgramming').value,
         provider: objConnectDesciption.connectionDB.provider,
         nameSpace: document.getElementById('edtNameSpace').value
@@ -56,7 +56,7 @@ document.getElementById('btnExportVO_EXE').onclick = async function () {
     });
 }
 document.getElementById('btnExportDBService').onclick = async function () {
-    reqAndRes('/contentDBService', 'GET', {
+    reqAndRes('/contentDBService', 'POST', {
         programming: document.getElementById('selProgramming').value,
         provider: objConnectDesciption.connectionDB.provider,
         nameSpace: document.getElementById('edtNameSpace').value
@@ -139,7 +139,7 @@ async function exportVO_EXE(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
             console.log("exportVO_EXE : ", { connDetail })
-            await reqAndRes('/contentVO_EXE', 'GET', connDetail, async (dataRes) => {
+            await reqAndRes('/contentVO_EXE', 'POST', connDetail, async (dataRes) => {
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
@@ -174,7 +174,7 @@ async function exportController(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
 
-            await reqAndRes('/contentController', 'GET', connDetail, async (dataRes) => {
+            await reqAndRes('/contentController', 'POST', connDetail, async (dataRes) => {
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
@@ -209,7 +209,7 @@ async function exportStoreProcedure(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
 
-            await reqAndRes('/contentStoreProcedure', 'GET', connDetail, async (dataRes) => {
+            await reqAndRes('/contentStoreProcedure', 'POST', connDetail, async (dataRes) => {
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
@@ -244,7 +244,7 @@ async function exportIndexTable(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
 
-            await reqAndRes('/contentIndexTable', 'GET', connDetail, async (dataRes) => {
+            await reqAndRes('/contentIndexTable', 'POST', connDetail, async (dataRes) => {
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {

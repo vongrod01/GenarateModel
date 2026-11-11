@@ -24,7 +24,7 @@ async function connectDB() {
     objConnectDesciption.connectionDB.port =  document.getElementById('edtPort').value
     objConnectDesciption.connectionDB.user =  document.getElementById('edtUser').value
     objConnectDesciption.connectionDB.password =  document.getElementById('edtPassword').value
-    reqAndRes('/databaseList', 'GET', objConnectDesciption.connectionDB, (dataRes) => {
+    reqAndRes('/databaseList', 'POST', objConnectDesciption.connectionDB, (dataRes) => {
         let tbody = document.querySelector('#tbDatabaseList tbody')
         tbody.innerHTML = ''
         
@@ -48,7 +48,7 @@ async function getTableList(el) {
     let databaseName = el.querySelector('td').innerHTML
     let dataReq = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
     dataReq.databaseName = databaseName
-    reqAndRes('/tableList', 'GET', dataReq, (dataRes) => {
+    reqAndRes('/tableList', 'POST', dataReq, (dataRes) => {
 
         let tbody = document.querySelector('#tbTableList tbody')
         tbody.innerHTML = ''
@@ -82,7 +82,7 @@ async function getTableDescription(el) {
     dataReq.databaseName = databaseName
     dataReq.tbName = tbName
     
-    reqAndRes('/tableDescription', 'GET', dataReq, (dataRes) => {
+    reqAndRes('/tableDescription', 'POST', dataReq, (dataRes) => {
         let tbody = document.querySelector('#tbTableDesciption tbody')
         tbody.innerHTML = ''
         let innerHTML = ''
