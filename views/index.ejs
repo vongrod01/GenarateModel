@@ -79,16 +79,26 @@
                 <span class="conn-chip"><span class="dot" aria-hidden="true"></span><span id="txtConnProvider">SQL Server</span> · <span class="mono" id="txtConnHost"></span></span>
             </div>
             <div class="toolbar-group">
-                <label class="tool-field">Target
-                    <select class="tool-select" id="selProgramming" name="selProgramming">
-                        <option value="nextjs" selected>Next.js</option>
-                        <option value="nodejs">Node.js</option>
-                        <option value=".net 4.5">.NET 4.5</option>
-                        <option value="codeigniter4">CodeIgniter 4</option>
-                        <option value="python">Python</option>
-                        <option value="javascript">JavaScript</option>
-                    </select>
-                </label>
+                <div class="target-group" role="group" aria-label="Target">
+                    <label class="tool-field">Frontend
+                        <select class="tool-select" id="selFrontend" name="selFrontend" disabled>
+                            <option value="" selected>Coming soon</option>
+                        </select>
+                    </label>
+                    <label class="tool-field">Backend
+                        <select class="tool-select" id="selProgramming" name="selProgramming">
+                            <option value="nextjs" selected>Next.js</option>
+                            <option value="nodejs">Node.js</option>
+                            <option value=".net 4.5">.NET 4.5</option>
+                            <option value="codeigniter4">CodeIgniter 4</option>
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                        </select>
+                    </label>
+                    <span class="tool-field" title="Set by the connection">Database
+                        <span class="tool-static" id="txtTargetDb">SQL Server</span>
+                    </span>
+                </div>
                 <label class="tool-field">Namespace
                     <input class="search mono" type="text" id="edtNameSpace" name="edtNameSpace" placeholder="MyCompany.App">
                 </label>
@@ -155,14 +165,28 @@
 
         <div class="glass action-bar" role="toolbar" aria-label="Export">
             <span class="action-count" id="txtSelectedCount">No tables selected</span>
-            <span class="sep" aria-hidden="true"></span>
-            <button type="button" class="pill" id="btnExportVO_EXE">VO / EXE</button>
-            <button type="button" class="pill" id="btnExportControl">Controller</button>
-            <button type="button" class="pill" id="btnExportStoreProce">Stored Proc</button>
-            <button type="button" class="pill" id="btnExportIndexTable">Index</button>
-            <span class="sep" aria-hidden="true"></span>
-            <button type="button" class="pill" id="btnExportDBService">DB Service</button>
-            <button type="button" class="pill" id="btnExportBaseClass">Base</button>
+            <div class="bar-group" role="group" aria-label="Frontend">
+                <span class="bar-label">Frontend</span>
+                <div class="bar-pills">
+                    <button type="button" class="pill" disabled>Coming soon</button>
+                </div>
+            </div>
+            <div class="bar-group" role="group" aria-label="Backend">
+                <span class="bar-label">Backend</span>
+                <div class="bar-pills">
+                    <button type="button" class="pill" id="btnExportVO_EXE">VO / EXE</button>
+                    <button type="button" class="pill" id="btnExportControl">Controller</button>
+                    <button type="button" class="pill" id="btnExportDBService">DB Service</button>
+                    <button type="button" class="pill" id="btnExportBaseClass">Base</button>
+                </div>
+            </div>
+            <div class="bar-group" role="group" aria-label="Database">
+                <span class="bar-label">Database</span>
+                <div class="bar-pills">
+                    <button type="button" class="pill" id="btnExportStoreProce">Stored Proc</button>
+                    <button type="button" class="pill" id="btnExportIndexTable">Index</button>
+                </div>
+            </div>
             <button type="button" class="btn-primary" id="btnOpenExport">
                 <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg>
                 Export…
@@ -186,20 +210,27 @@
                 <div class="chips" id="pnlExportTables"></div>
 
                 <div class="group">
-                    <span class="group-label">For each table</span>
+                    <span class="group-label">Frontend</span>
                     <div class="group-box">
-                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportVO_EXE" data-scope="table"><span><b>Model (VO / EXE)</b><small>Value object and executor class</small></span><i class="switch" aria-hidden="true"></i></button>
-                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportControl" data-scope="table"><span><b>Controller</b><small>CRUD endpoints</small></span><i class="switch" aria-hidden="true"></i></button>
-                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportStoreProce" data-scope="table"><span><b>Stored procedure</b><small>Insert, update, delete, select</small></span><i class="switch" aria-hidden="true"></i></button>
-                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportIndexTable" data-scope="table"><span><b>Index table</b><small>CREATE INDEX script</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <div class="group-empty">Coming soon</div>
                     </div>
                 </div>
 
                 <div class="group">
-                    <span class="group-label">Project files · once</span>
+                    <span class="group-label">Backend</span>
                     <div class="group-box">
-                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportDBService" data-scope="project"><span><b>DB Service</b><small>Connection and query helper</small></span><i class="switch" aria-hidden="true"></i></button>
-                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportBaseClass" data-scope="project"><span><b>Model (Base)</b><small>Shared base class</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportVO_EXE" data-scope="table"><span><b>Model (VO / EXE)</b><small>Value object and executor class · per table</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportControl" data-scope="table"><span><b>Controller</b><small>CRUD endpoints · per table</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportDBService" data-scope="project"><span><b>DB Service</b><small>Connection and query helper · once</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportBaseClass" data-scope="project"><span><b>Base class</b><small>Shared base classes · once</small></span><i class="switch" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <div class="group">
+                    <span class="group-label">Database</span>
+                    <div class="group-box">
+                        <button type="button" class="switch-row" role="switch" aria-checked="true" data-target="btnExportStoreProce" data-scope="table"><span><b>Stored procedure</b><small>Insert, update, delete, select · per table</small></span><i class="switch" aria-hidden="true"></i></button>
+                        <button type="button" class="switch-row" role="switch" aria-checked="false" data-target="btnExportIndexTable" data-scope="table"><span><b>Index table</b><small>CREATE INDEX script · per table</small></span><i class="switch" aria-hidden="true"></i></button>
                     </div>
                 </div>
 

@@ -102,6 +102,7 @@
             setConnecting(false)
             const seg = segButtons.find((b) => b.dataset.value === providerInput.value)
             $id('txtConnProvider').textContent = seg ? seg.textContent : providerInput.value
+            $id('txtTargetDb').textContent = $id('txtConnProvider').textContent
             $id('txtConnHost').textContent = $id('edtHost').value + ':' + $id('edtPort').value
             body.classList.add('connected')
         }
