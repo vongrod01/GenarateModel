@@ -150,7 +150,7 @@
         const all = total > 0 && n === total
         $id('chkSelectAll').checked = all
         $id('txtSelectAll').textContent = all ? 'Deselect all' : 'Select all'
-        ;['btnExportVO_EXE', 'btnExportControl', 'btnExportStoreProce', 'btnExportIndexTable'].forEach((id) => {
+        ;['btnExportModelService', 'btnExportControl', 'btnExportStoreProce', 'btnExportIndexTable'].forEach((id) => {
             $id(id).disabled = n === 0
         })
     }

@@ -1,24 +1,24 @@
 const { header } = require('./header')
 
-function nodejsVO_EXE(dataDescription) {
+function nodejsModelService(dataDescription) {
     // console.table(dataDescription)
-    let classVO = ``
-    let classEXE = ``
+    let classModel = ``
+    let classService = ``
     let className = ''
-    let constructorVO = `constructor() {
+    let constructorModel = `constructor() {
         super()
         `
-    let getterSetterVO = ''
-    let paramsListEXE = ''
+    let getterSetterModel = ''
+    let paramsListService = ''
 
     dataDescription.tbName.split('_').forEach(str => {
         // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
         str.charAt(0).toUpperCase() + str.slice(1);
         className += str.charAt(0).toUpperCase() + str.slice(1)
     });
-    let constructorEXE = `constructor(connDetail) {
+    let constructorService = `constructor(connDetail) {
         super(connDetail)
-        this.result = new ${className}VO()
+        this.result = new ${className}Model()
     }`
 
     dataDescription.dataSet.forEach(field => {
@@ -32,9 +32,9 @@ function nodejsVO_EXE(dataDescription) {
         else {
             initValue = "''"
         }
-        constructorVO += `this._${field.FieldName} = ${initValue}
+        constructorModel += `this._${field.FieldName} = ${initValue}
         `
-        getterSetterVO += `
+        getterSetterModel += `
     get ${field.FieldName}() {
         return this._${field.FieldName};
     }
@@ -42,17 +42,17 @@ function nodejsVO_EXE(dataDescription) {
         this._${field.FieldName} = value
     }
         `
-        paramsListEXE += `          DataVO.${field.FieldName},
+        paramsListService += `          DataModel.${field.FieldName},
     `
     });
-    constructorVO += '}'
-    classVO += `
-class ${className}VO extends BaseClass.BaseVO {
-    ${constructorVO}
-    ${getterSetterVO}
+    constructorModel += '}'
+    classModel += `
+class ${className}Model extends BaseClass.BaseModel {
+    ${constructorModel}
+    ${getterSetterModel}
 }   
      `
-    let methodEXE = `
+    let methodService = `
     async get(RxNo) {
         try {
 
@@ -71,10 +71,10 @@ class ${className}VO extends BaseClass.BaseVO {
         }
     }
 
-    async add(DataVO) {
+    async add(DataModel) {
         try {
             let params = [
-                ${paramsListEXE}
+                ${paramsListService}
             ]
             await this.callSp('${dataDescription.tbName}_add', params)
             let RxNo = this.paramsOut.Param1
@@ -87,10 +87,10 @@ class ${className}VO extends BaseClass.BaseVO {
         }
     }
 
-    async edit(DataVO) {
+    async edit(DataModel) {
         try {
             let params = [
-                ${paramsListEXE}
+                ${paramsListService}
             ]
             await this.callSp('${dataDescription.tbName}_edit', params)
             let RxNo = this.paramsOut.Param1
@@ -114,10 +114,10 @@ class ${className}VO extends BaseClass.BaseVO {
         }
     }
 
-    async search(DataVO) {
+    async search(DataModel) {
         try {
             let params = [
-                ${paramsListEXE}
+                ${paramsListService}
             ]
             await this.callSp('${dataDescription.tbName}_search', params)
         } catch (error) {
@@ -129,19 +129,19 @@ class ${className}VO extends BaseClass.BaseVO {
     }
      
      `
-    classEXE += `
-class ${className}EXE extends BaseClass.BaseEXE {   
-    ${constructorEXE}
-    ${methodEXE}
+    classService += `
+class ${className}Service extends BaseClass.BaseService {   
+    ${constructorService}
+    ${methodService}
 }
     `
 
     let content = `/*\n${header()}*/
 const BaseClass = require('./BaseClass')
-    ${classVO}
-    ${classEXE}
-module.exports.${className}VO = ${className}VO
-module.exports.${className}EXE = ${className}EXE
+    ${classModel}
+    ${classService}
+module.exports.${className}Model = ${className}Model
+module.exports.${className}Service = ${className}Service
     `
     return {
         export: true,
@@ -150,4 +150,4 @@ module.exports.${className}EXE = ${className}EXE
     }
 }
 
-module.exports.nodejsVO_EXE = nodejsVO_EXE
+module.exports.nodejsModelService = nodejsModelService

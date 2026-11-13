@@ -125,7 +125,7 @@ ${nameSpace.trim() != '' ? `}` : ''}
     }
 
 }
-function baseVO_EXE(programming, provider, nameSpace = '') {
+function baseModelService(programming, provider, nameSpace = '') {
     console.log({ programming, provider, nameSpace })
     let content = '';
     if (programming === 'nodejs') {
@@ -138,7 +138,7 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
         }
         content = `/*\n${header()}*/
         ${importDB}
-        class BaseVO {
+        class BaseModel {
             constructor() {
 
             }
@@ -175,7 +175,7 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
                 }
             }
         }
-        class BaseEXE extends mysql.MysqlConnection {
+        class BaseService extends mysql.MysqlConnection {
             constructor(connDetail) {
                 super(connDetail)
             }
@@ -192,8 +192,8 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
         }
 
 
-        module.exports.BaseVO = BaseVO
-        module.exports.BaseEXE = BaseEXE
+        module.exports.BaseModel = BaseModel
+        module.exports.BaseService = BaseService
                 
             `
         return {
@@ -213,7 +213,7 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
         content = `/*\n${header()}*/
         import 'server-only'
         ${importDB}
-        export class BaseVO {
+        export class BaseModel {
             constructor() {
 
             }
@@ -251,7 +251,7 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
             }
         }
             
-        export class BaseEXE extends Db {
+        export class BaseService extends Db {
             constructor(connGroup = 'default') {
                 super(connGroup)
             }
@@ -283,7 +283,7 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
         }
         content = `${header()}
         ${importDB}
-        class BaseVO():
+        class BaseModel():
             def to_dict(self):
                 return {key.replace(f'_{type(self).__name__}__', ''): value for key, value in self.__dict__.items() if
                     not key.startswith('__') and not callable(key)}
@@ -305,9 +305,9 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
                 else:
                     print('type not map')
 
-        class BaseEXE(ConnectMySQL):
+        class BaseService(ConnectMySQL):
             def __init__(self, config_connection):
-                super(BaseEXE, self).__init__(config_connection)
+                super(BaseService, self).__init__(config_connection)
 
             def err_exe(self, err_str):
                 dividing_line = ''
@@ -340,7 +340,7 @@ function baseVO_EXE(programming, provider, nameSpace = '') {
 /*\n${header()}*/
 ${importDB}
 
-abstract class BaseVO
+abstract class BaseModel
 {
     protected  $props = []; // ประกาศ protected property เพื่อไม่ให้ถูกใช้งานผ่าน object instant 
 
@@ -378,13 +378,13 @@ abstract class BaseVO
 }
     `)
 
-        result.fileName.push(`BaseVO.php`)
+        result.fileName.push(`BaseModel.php`)
 
         result.content.push(`<?php namespace App\\My_Models;     
 /*\n${header()}*/
 ${importDB}
 
-abstract class BaseEXE{
+abstract class BaseService{
     public $db;
     public $data_set = [];
     function __construct($conn_group = null){
@@ -445,7 +445,7 @@ abstract class BaseEXE{
 }
     `)
 
-        result.fileName.push(`BaseEXE.php`)
+        result.fileName.push(`BaseService.php`)
 
 
 
@@ -529,4 +529,4 @@ ${nameSpace.trim() != '' ? `}` : ''}
 }
 
 module.exports.dbService = dbService
-module.exports.baseVO_EXE = baseVO_EXE
+module.exports.baseModelService = baseModelService

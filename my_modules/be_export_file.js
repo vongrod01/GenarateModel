@@ -8,11 +8,11 @@ const dotnet4_5 = require('./generators/dotnet4_5')
 const sql = require('./generators/sql')
 
 module.exports = {
-    ...base,          // dbService, baseVO_EXE
-    ...nodejs,        // nodejsVO_EXE
-    ...nextjs,        // nextjsVO_EXE
-    ...python,        // pythonVO_EXE
-    ...codeigniter4,  // codeigniterVO_EXE, codeigniterController
-    ...dotnet4_5,     // dotNet4_5Controller, dotNet4_5_VO_EXE
+    ...base,          // dbService, baseModelService
+    ...nodejs,        // nodejsModelService
+    ...nextjs,        // nextjsModelService
+    ...python,        // pythonModelService
+    ...codeigniter4,  // codeigniterModelService, codeigniterController
+    ...dotnet4_5,     // dotNet4_5Controller, dotNet4_5_ModelService
     ...sql,           // storeProcedure, indexTable
 }

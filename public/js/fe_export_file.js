@@ -35,7 +35,7 @@ document.getElementById('btnExportBaseClass').onclick = function () {
     )
 }
 
-document.getElementById('btnExportVO_EXE').onclick = async function () {
+document.getElementById('btnExportModelService').onclick = async function () {
 
     document.querySelectorAll('#tbTableList * td input[type=checkbox]:checked').forEach(elChk => {
         let tbName = elChk.value
@@ -45,7 +45,7 @@ document.getElementById('btnExportVO_EXE').onclick = async function () {
         connDetail.tbName = tbName
         connDetail.programming = document.getElementById('selProgramming').value
         connDetail.nameSpace = document.getElementById('edtNameSpace').value
-        exportVO_EXE(connDetail)
+        exportModelService(connDetail)
             .then((data) => {
                 // console.log(data)
             })
@@ -135,11 +135,11 @@ document.getElementById('btnExportIndexTable').onclick = async function () {
 }
 
 
-async function exportVO_EXE(connDetail) {
+async function exportModelService(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log("exportVO_EXE : ", { connDetail })
-            await reqAndRes('/contentVO_EXE', 'POST', connDetail, async (dataRes) => {
+            console.log("exportModelService : ", { connDetail })
+            await reqAndRes('/contentModelService', 'POST', connDetail, async (dataRes) => {
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {

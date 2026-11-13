@@ -1,6 +1,6 @@
 const { header } = require('./header')
 
-function codeigniterVO_EXE(dataDescription) {
+function codeigniterModelService(dataDescription) {
     console.log('dataDescription.databaseName : ', dataDescription.databaseName)
 
     let tbFullName = `${dataDescription.databaseName}.dbo.${dataDescription.tbName}`
@@ -16,23 +16,23 @@ function codeigniterVO_EXE(dataDescription) {
         fileName: []
     }
     let content = '';
-    let getterVO = `
+    let getterModel = `
     public function __get($prop_name)
     {
         switch ($prop_name) {
     `
-    let setterVO = `
+    let setterModel = `
     public function __set($prop_name, $value)
     {
         switch ($prop_name) {
     `
-    let paramsListEXE = {
+    let paramsListService = {
         'add': '',
         'edit': '',
         'search': ''
     }
-    let constructorVO = `
-    function __construct($objVO = null)
+    let constructorModel = `
+    function __construct($objModel = null)
     {
     `
     // Construct
@@ -47,37 +47,37 @@ function codeigniterVO_EXE(dataDescription) {
         else {
             initValue = '"";'
         }
-        constructorVO += `  $this->${field.FieldName} = ${initValue}
+        constructorModel += `  $this->${field.FieldName} = ${initValue}
         `
 
-        getterVO += `
+        getterModel += `
             case '${field.FieldName}':
                 return $this->props[$prop_name];
                 break;`
-        setterVO += `
+        setterModel += `
             case '${field.FieldName}':
                 $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType) ? '(int)' : ''}$value;
                 break;`
         if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
             if (field.FieldName == 'ID') {
 
-                paramsListEXE.edit += `          $DataVO->${field.FieldName},
+                paramsListService.edit += `          $DataModel->${field.FieldName},
 `
             }
             else if (field.FieldName == 'AddBy') {
-                paramsListEXE.add += `          $DataVO->${field.FieldName},
+                paramsListService.add += `          $DataModel->${field.FieldName},
 `
             }
             else if (field.FieldName == 'UpdateBy') {
-                paramsListEXE.edit += `          $DataVO->${field.FieldName},
+                paramsListService.edit += `          $DataModel->${field.FieldName},
 `
             }
             else {
-                paramsListEXE.add += `          $DataVO->${field.FieldName},
+                paramsListService.add += `          $DataModel->${field.FieldName},
 `
-                paramsListEXE.search += `          $DataVO->${field.FieldName},
+                paramsListService.search += `          $DataModel->${field.FieldName},
 `
-                paramsListEXE.edit += `          $DataVO->${field.FieldName},
+                paramsListService.edit += `          $DataModel->${field.FieldName},
 `
             }
 
@@ -85,21 +85,21 @@ function codeigniterVO_EXE(dataDescription) {
 
 
 
-        //         paramsListEXE += `          $DataVO->${field.FieldName},
+        //         paramsListService += `          $DataModel->${field.FieldName},
         // `
     });
 
-    constructorVO += `
+    constructorModel += `
     }
     `
-    getterVO += `
+    getterModel += `
             default:
                 return null;
                 break;
         }
     }
     `
-    setterVO += `
+    setterModel += `
             default:
                 $this->props[$prop_name] = $value;
                 break;
@@ -109,31 +109,31 @@ function codeigniterVO_EXE(dataDescription) {
     content = `<?php namespace App\\My_Models;
 /*\n${header()}*/
 
-use App\\My_Models\\BaseVO;
+use App\\My_Models\\BaseModel;
 
-class ${className}VO extends BaseVO
+class ${className}Model extends BaseModel
 {
-${constructorVO}
-${getterVO}
-${setterVO}
+${constructorModel}
+${getterModel}
+${setterModel}
 }
     `
     result.content.push(content)
-    result.fileName.push(`${className}VO.php`)
-    // จบ VO
+    result.fileName.push(`${className}Model.php`)
+    // จบ Model
     // -----------------------------------------------------------
 
 
-    let constructorEXE = `
+    let constructorService = `
     public $_result;
     function __construct($conn_group = null)
     {
         parent::__construct($conn_group);
-        $this->_result = new ${className}VO();
+        $this->_result = new ${className}Model();
     }        
     `
 
-    let methodEXE = `
+    let methodService = `
     public function _Get($ID)
     {
         $this->call_sp('${tbFullName}_get', [$ID]);
@@ -145,18 +145,18 @@ ${setterVO}
         }  
     }
 
-    public function _Search($DataVO)
+    public function _Search($DataModel)
     {
         $params = [
-            ${paramsListEXE.search}
+            ${paramsListService.search}
         ];
         return $this->call_sp('${tbFullName}_search', $params);
     }
 
-    public function _Add($DataVO)
+    public function _Add($DataModel)
     {
         $params = [
-            ${paramsListEXE.add}
+            ${paramsListService.add}
         ];
         $result = $this->call_sp('${tbFullName}_add', $params);
         if ($result != null and count($result) > 0) {
@@ -167,13 +167,13 @@ ${setterVO}
         }
     }
 
-    public function _Edit($DataVO)
+    public function _Edit($DataModel)
     {
         $params = [
-            ${paramsListEXE.edit}
+            ${paramsListService.edit}
         ];
         $this->call_sp('${tbFullName}_edit', $params);
-        return $this->_Get($DataVO->ID);
+        return $this->_Get($DataModel->ID);
     }
     
     public function _Delete($ID)
@@ -191,18 +191,18 @@ ${setterVO}
     content = `<?php namespace App\\My_Models;
 /*\n${header()}*/
 
-use App\\My_Models\\BaseEXE;
-use App\\My_Models\\${className}VO;
+use App\\My_Models\\BaseService;
+use App\\My_Models\\${className}Model;
 
-class ${className}EXE extends BaseEXE
+class ${className}Service extends BaseService
 {
-    ${constructorEXE}
-    ${methodEXE}
+    ${constructorService}
+    ${methodService}
 }
     `
     result.content.push(content)
-    result.fileName.push(`${className}EXE.php`)
-    // จบ EXE
+    result.fileName.push(`${className}Service.php`)
+    // จบ Service
     // -----------------------------------------------------------
 
 
@@ -225,8 +225,8 @@ function codeigniterController(dataDescription) {
 /*\n${header()}*/
 
 use CodeIgniter\\RESTful\\ResourceController;
-use App\\My_Models\\${className}VO;
-use App\\My_Models\\${className}EXE;
+use App\\My_Models\\${className}Model;
+use App\\My_Models\\${className}Service;
 
 class ${className}Controller extends ResourceController
 {
@@ -236,39 +236,39 @@ class ${className}Controller extends ResourceController
             $method = $this->request->getMethod();
             $data_req = $this->request->getVar();
             $ID = (int)$this->request->getVar("ID");
-            $${className}VO = new ${className}VO();
-            $${className}EXE = new ${className}EXE();
+            $${className}Model = new ${className}Model();
+            $${className}Service = new ${className}Service();
             if ($method == "get" and $ID !== null and $ID !== 0) {
                 // GET
 
-                if ($${className}EXE->_Get($ID) !== null) {
-                    $${className}EXE->_result->assignTo($${className}VO);
-                    return $this->respond($${className}VO->getProps(), 200);
+                if ($${className}Service->_Get($ID) !== null) {
+                    $${className}Service->_result->assignTo($${className}Model);
+                    return $this->respond($${className}Model->getProps(), 200);
                 } else {
                     return $this->respond(["Message" => "No Content"], 200);
                 }
             } elseif ($method == "get") {
                 // SEARCH
-                $${className}VO->dataAssignToProps($data_req);
-                $${className}EXE->_Search($${className}VO);
-                return $this->respond($${className}EXE->data_set, 200);
+                $${className}Model->dataAssignToProps($data_req);
+                $${className}Service->_Search($${className}Model);
+                return $this->respond($${className}Service->data_set, 200);
             } elseif ($method == "post") {
                 // ADD
-                $${className}VO->dataAssignToProps($data_req);
-                if ($${className}EXE->_Add($${className}VO) !== null) {
-                    $${className}EXE->_result->assignTo($${className}VO);
-                    return $this->respond($${className}VO->getProps(), 200);
+                $${className}Model->dataAssignToProps($data_req);
+                if ($${className}Service->_Add($${className}Model) !== null) {
+                    $${className}Service->_result->assignTo($${className}Model);
+                    return $this->respond($${className}Model->getProps(), 200);
                 } else {
                     return $this->respond(["Message" => "Not Modified"], 200);
                 }
             } elseif ($method == "put") {
                 // EDIT
-                if ($${className}EXE->_Get($ID) !== null) {
-                    $${className}EXE->_result->assignTo($${className}VO);
-                    $${className}VO->dataAssignToProps($data_req);
-                    if ($${className}EXE->_Edit($${className}VO) !== null) {
-                        $${className}EXE->_result->assignTo($${className}VO);
-                        return $this->respond($${className}VO->getProps(), 200);
+                if ($${className}Service->_Get($ID) !== null) {
+                    $${className}Service->_result->assignTo($${className}Model);
+                    $${className}Model->dataAssignToProps($data_req);
+                    if ($${className}Service->_Edit($${className}Model) !== null) {
+                        $${className}Service->_result->assignTo($${className}Model);
+                        return $this->respond($${className}Model->getProps(), 200);
                     } else {
                         return $this->respond(["Message" => "Not Modified"], 200);
                     }
@@ -277,7 +277,7 @@ class ${className}Controller extends ResourceController
                 }
             } elseif ($method == "delete") {
                 // DELETE
-                if ($${className}EXE->_Delete($ID)) {
+                if ($${className}Service->_Delete($ID)) {
                     return $this->respond(["Message" => "Successfully deleted data"], 200);
                 } else {
                     return $this->respond(["Message" => "Not Modified"], 200);
@@ -301,5 +301,5 @@ class ${className}Controller extends ResourceController
     return result
 }
 
-module.exports.codeigniterVO_EXE = codeigniterVO_EXE
+module.exports.codeigniterModelService = codeigniterModelService
 module.exports.codeigniterController = codeigniterController

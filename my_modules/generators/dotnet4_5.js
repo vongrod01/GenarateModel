@@ -275,7 +275,7 @@ ${nameSpace.trim() != '' ? `}` : ''}
     return result
 }
 
-function dotNet4_5_VO_EXE(dataDescription, nameSpace = '') {
+function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
     console.log({ dataDescription, nameSpace })
 
     let tbFullName = `${dataDescription.databaseName}.dbo.${dataDescription.tbName}`
@@ -292,7 +292,7 @@ function dotNet4_5_VO_EXE(dataDescription, nameSpace = '') {
     }
     let content = '';
 
-    let paramsListEXE = {
+    let paramsListService = {
         'add': '',
         'edit': '',
         'search': ''
@@ -502,23 +502,23 @@ function dotNet4_5_VO_EXE(dataDescription, nameSpace = '') {
 
         if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
             if (field.FieldName == 'ID') {
-                paramsListEXE.edit += `          ${genSqlParameter(field)}
+                paramsListService.edit += `          ${genSqlParameter(field)}
 `
             }
             else if (field.FieldName == 'AddBy') {
-                paramsListEXE.add += `          ${genSqlParameter(field)}
+                paramsListService.add += `          ${genSqlParameter(field)}
 `
             }
             else if (field.FieldName == 'UpdateBy') {
-                paramsListEXE.edit += `         ${genSqlParameter(field)}
+                paramsListService.edit += `         ${genSqlParameter(field)}
 `
             }
             else {
-                paramsListEXE.add += `          ${genSqlParameter(field)}
+                paramsListService.add += `          ${genSqlParameter(field)}
 `
-                paramsListEXE.search += `       ${genSqlParameter(field)}
+                paramsListService.search += `       ${genSqlParameter(field)}
 `
-                paramsListEXE.edit += `         ${genSqlParameter(field)}
+                paramsListService.edit += `         ${genSqlParameter(field)}
 `
             }
 
@@ -528,7 +528,7 @@ function dotNet4_5_VO_EXE(dataDescription, nameSpace = '') {
 
 
 
-        //         paramsListEXE += `          $DataVO->${field.FieldName},
+        //         paramsListService += `          $DataModel->${field.FieldName},
         // `
     });
 
@@ -548,7 +548,7 @@ ${nameSpace.trim() != '' ? `}` : ''}
     `
     result.content.push(content)
     result.fileName.push(`${className}Model.cs`)
-    // จบ VO
+    // จบ Model
     // -----------------------------------------------------------
 
 
@@ -610,7 +610,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
 
-                    ${paramsListEXE.add}
+                    ${paramsListService.add}
 
                     if (conn.State != ConnectionState.Open)
                         conn.Open();
@@ -642,7 +642,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
 
-                    ${paramsListEXE.edit}
+                    ${paramsListService.edit}
 
                     if (conn.State != ConnectionState.Open)
                         conn.Open();
@@ -670,7 +670,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
 
-                    ${paramsListEXE.search}
+                    ${paramsListService.search}
 
                     if (conn.State != ConnectionState.Open)
                         conn.Open();
@@ -734,7 +734,7 @@ ${nameSpace.trim() != '' ? `}` : ''}
     `
     result.content.push(content)
     result.fileName.push(`${className}Service.cs`)
-    // จบ EXE
+    // จบ Service
     // -----------------------------------------------------------
 
 
@@ -744,4 +744,4 @@ ${nameSpace.trim() != '' ? `}` : ''}
 
 
 module.exports.dotNet4_5Controller = dotNet4_5Controller
-module.exports.dotNet4_5_VO_EXE = dotNet4_5_VO_EXE
+module.exports.dotNet4_5_ModelService = dotNet4_5_ModelService

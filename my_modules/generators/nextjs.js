@@ -1,24 +1,24 @@
 const { header } = require('./header')
 
-function nextjsVO_EXE(dataDescription) {
+function nextjsModelService(dataDescription) {
     // console.table(dataDescription)
-    let classVO = ``
-    let classEXE = ``
+    let classModel = ``
+    let classService = ``
     let className = ''
-    let constructorVO = `constructor() {
+    let constructorModel = `constructor() {
         super()
         `
-    let getterSetterVO = ''
-    let paramsListEXE = ''
+    let getterSetterModel = ''
+    let paramsListService = ''
 
     dataDescription.tbName.split('_').forEach(str => {
         // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
         str.charAt(0).toUpperCase() + str.slice(1);
         className += str.charAt(0).toUpperCase() + str.slice(1)
     });
-    let constructorEXE = `constructor(connGroup) {
+    let constructorService = `constructor(connGroup) {
         super(connGroup)
-        this.result = new ${className}VO()
+        this.result = new ${className}Model()
     }`
 
     dataDescription.dataSet.forEach(field => {
@@ -32,9 +32,9 @@ function nextjsVO_EXE(dataDescription) {
         else {
             initValue = "''"
         }
-        constructorVO += `this._${field.FieldName} = ${initValue}
+        constructorModel += `this._${field.FieldName} = ${initValue}
         `
-        getterSetterVO += `
+        getterSetterModel += `
     get ${field.FieldName}() {
         return this._${field.FieldName};
     }
@@ -42,17 +42,17 @@ function nextjsVO_EXE(dataDescription) {
         this._${field.FieldName} = value
     }
         `
-        paramsListEXE += `          ${field.FieldName} : DataVO.${field.FieldName},
+        paramsListService += `          ${field.FieldName} : DataModel.${field.FieldName},
     `
     });
-    constructorVO += '}'
-    classVO += `
-export class ${className}VO extends BaseVO {
-    ${constructorVO}
-    ${getterSetterVO}
+    constructorModel += '}'
+    classModel += `
+export class ${className}Model extends BaseModel {
+    ${constructorModel}
+    ${getterSetterModel}
 }   
      `
-    let methodEXE = `
+    let methodService = `
     async get(ID) {
         try {
 
@@ -70,10 +70,10 @@ export class ${className}VO extends BaseVO {
         }
     }
 
-    async add(DataVO) {
+    async add(DataModel) {
         try {
             let params = {
-                ${paramsListEXE}
+                ${paramsListService}
             }
             const dataset = await this.callSp('${dataDescription.tbName}_add', params)
             if (dataset.length > 0) {
@@ -89,13 +89,13 @@ export class ${className}VO extends BaseVO {
         }
     }
 
-    async edit(DataVO) {
+    async edit(DataModel) {
         try {
             let params = {
-                ${paramsListEXE}
+                ${paramsListService}
             }
             await this.callSp('${dataDescription.tbName}_edit', params)
-            return this.get(DataVO.ID)
+            return this.get(DataModel.ID)
 
         } catch (error) {
             this.logErrorExec('****** Error ${dataDescription.tbName}_edit : ' + error + '******')
@@ -114,10 +114,10 @@ export class ${className}VO extends BaseVO {
         }
     }
 
-    async search(DataVO) {
+    async search(DataModel) {
         try {
             let params = {
-                ${paramsListEXE}
+                ${paramsListService}
             }
             const dataset = await this.callSp('${dataDescription.tbName}_search', params)
             return dataset
@@ -128,18 +128,18 @@ export class ${className}VO extends BaseVO {
     }
      
      `
-    classEXE += `
-export class ${className}EXE extends BaseEXE {   
-    ${constructorEXE}
-    ${methodEXE}
+    classService += `
+export class ${className}Service extends BaseService {   
+    ${constructorService}
+    ${methodService}
 }
     `
 
     let content = `/*\n${header()}*/
 import 'server-only'
-import { BaseVO, BaseEXE } from './BaseClass'
-    ${classVO}
-    ${classEXE}
+import { BaseModel, BaseService } from './BaseClass'
+    ${classModel}
+    ${classService}
     `
     return {
         export: true,
@@ -148,4 +148,4 @@ import { BaseVO, BaseEXE } from './BaseClass'
     }
 }
 
-module.exports.nextjsVO_EXE = nextjsVO_EXE
+module.exports.nextjsModelService = nextjsModelService

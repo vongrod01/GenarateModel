@@ -1,23 +1,23 @@
 const { header } = require('./header')
 
-function pythonVO_EXE(dataDescription) {
-    let classVO = ``
-    let classEXE = ``
+function pythonModelService(dataDescription) {
+    let classModel = ``
+    let classService = ``
     let className = ''
-    let constructorVO = `def __init__(self):
+    let constructorModel = `def __init__(self):
         
         `
-    let getterSetterVO = ''
-    let paramsListEXE = ''
+    let getterSetterModel = ''
+    let paramsListService = ''
 
     dataDescription.tbName.split('_').forEach(str => {
         // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
         str.charAt(0).toUpperCase() + str.slice(1);
         className += str.charAt(0).toUpperCase() + str.slice(1)
     });
-    let constructorEXE = `def __init__(self, config_connection):
-        super(${className}EXE, self).__init__(config_connection)
-        self.result = ${className}VO()
+    let constructorService = `def __init__(self, config_connection):
+        super(${className}Service, self).__init__(config_connection)
+        self.result = ${className}Model()
         `
 
     dataDescription.dataSet.forEach(field => {
@@ -31,9 +31,9 @@ function pythonVO_EXE(dataDescription) {
         else {
             initValue = "''"
         }
-        constructorVO += `self.${field.FieldName} = ${initValue}
+        constructorModel += `self.${field.FieldName} = ${initValue}
         `
-        getterSetterVO += `
+        getterSetterModel += `
     @property
     def ${field.FieldName}(self):
         return self.__${field.FieldName}
@@ -42,16 +42,16 @@ function pythonVO_EXE(dataDescription) {
     def ${field.FieldName}(self, ${field.FieldName}):
         self.__${field.FieldName} = ${field.FieldName}
     `
-        paramsListEXE += `          DataVO.${field.FieldName},
+        paramsListService += `          DataModel.${field.FieldName},
     `
     });
 
-    classVO += `
-class ${className}VO(BaseVO):
-    ${constructorVO}
-    ${getterSetterVO}   
+    classModel += `
+class ${className}Model(BaseModel):
+    ${constructorModel}
+    ${getterSetterModel}   
      `
-    let methodEXE = `
+    let methodService = `
     def get(self, RxNo):
         try:
             self.call_sp('${dataDescription.tbName}_get', [RxNo])
@@ -65,9 +65,9 @@ class ${className}VO(BaseVO):
             self.data_set = []
             return None
 
-    def add(self, DataVO):
+    def add(self, DataModel):
         params = [
-            ${paramsListEXE}
+            ${paramsListService}
         ]
         try:
             self.call_sp('${dataDescription.tbName}_add', params)
@@ -77,13 +77,13 @@ class ${className}VO(BaseVO):
             self.data_set = []
             return None
 
-    def edit(self, DataVO):
+    def edit(self, DataModel):
         params = [
-            ${paramsListEXE}
+            ${paramsListService}
         ]
         try:
             self.call_sp('${dataDescription.tbName}_edit', params)
-            return self.get(DataVO.RxNo)
+            return self.get(DataModel.RxNo)
         except Exception as err:
             self.err_exe(f'****** Error ${dataDescription.tbName}_edit : {err} ******')
             self.data_set = []
@@ -97,9 +97,9 @@ class ${className}VO(BaseVO):
             self.err_exe(f'****** Error ${dataDescription.tbName}_delete : {err} ******')
             return False
 
-    def search(self, DataVO):
+    def search(self, DataModel):
         params = [
-            ${paramsListEXE}
+            ${paramsListService}
         ]
         try:
             self.call_sp('${dataDescription.tbName}_search', params)
@@ -108,18 +108,18 @@ class ${className}VO(BaseVO):
             self.data_set = []
         return self.data_set
      `
-    classEXE += `
-class ${className}EXE(BaseEXE):   
-    ${constructorEXE}
-    ${methodEXE}
+    classService += `
+class ${className}Service(BaseService):   
+    ${constructorService}
+    ${methodService}
 
     `
 
     let content = `${header()}
-from .BaseClass import BaseVO,BaseEXE
+from .BaseClass import BaseModel,BaseService
 import datetime
-    ${classVO}
-    ${classEXE}
+    ${classModel}
+    ${classService}
     `
     return {
         export: true,
@@ -128,4 +128,4 @@ import datetime
     }
 }
 
-module.exports.pythonVO_EXE = pythonVO_EXE
+module.exports.pythonModelService = pythonModelService

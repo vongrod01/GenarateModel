@@ -16,12 +16,12 @@ router.post('/contentBase', async (req, res) => {
     let programming = req_json.programming;
     let provider = req_json.provider;
     let nameSpace = req_json.nameSpace;
-    res.json(be_export_file.baseVO_EXE(programming,provider,nameSpace))
+    res.json(be_export_file.baseModelService(programming,provider,nameSpace))
 })
 
 
 
-router.post('/contentVO_EXE', async (req, res) => {
+router.post('/contentModelService', async (req, res) => {
 
     let req_json = req.body
     let nameSpace = req_json.nameSpace;
@@ -35,23 +35,23 @@ router.post('/contentVO_EXE', async (req, res) => {
     // dataDescription.tbName = req_json.tbName
     if(req_json.programming === 'nodejs'){
 
-        res.json(be_export_file.nodejsVO_EXE(dataDescription))
+        res.json(be_export_file.nodejsModelService(dataDescription))
     }
     else if(req_json.programming === 'nextjs'){
 
-        res.json(be_export_file.nextjsVO_EXE(dataDescription))
+        res.json(be_export_file.nextjsModelService(dataDescription))
     }
     else if(req_json.programming === 'python'){
 
-        res.json(be_export_file.pythonVO_EXE(dataDescription))
+        res.json(be_export_file.pythonModelService(dataDescription))
     }
     else if(req_json.programming === 'codeigniter4'){
 
-        res.json(be_export_file.codeigniterVO_EXE(dataDescription))
+        res.json(be_export_file.codeigniterModelService(dataDescription))
     }
     else if(req_json.programming === '.net 4.5'){
 
-        res.json(be_export_file.dotNet4_5_VO_EXE(dataDescription,nameSpace))
+        res.json(be_export_file.dotNet4_5_ModelService(dataDescription,nameSpace))
     }
     else{
         res.json({
@@ -73,11 +73,11 @@ router.post('/contentController', async (req, res) => {
     // dataDescription.tbName = req_json.tbName
     if(req_json.programming === 'nodejs'){
 
-        // res.json(be_export_file.nodejsVO_EXE(dataDescription))
+        // res.json(be_export_file.nodejsModelService(dataDescription))
     }
     else if(req_json.programming === 'python'){
 
-        // res.json(be_export_file.pythonVO_EXE(dataDescription))
+        // res.json(be_export_file.pythonModelService(dataDescription))
     }
     else if(req_json.programming === 'codeigniter4'){
 
@@ -109,11 +109,11 @@ router.post('/contentStoreProcedure', async (req, res) => {
     // dataDescription.tbName = req_json.tbName
     // if(req_json.programming === 'nodejs'){
 
-    //     // res.json(be_export_file.nodejsVO_EXE(dataDescription))
+    //     // res.json(be_export_file.nodejsModelService(dataDescription))
     // }
     // else if(req_json.programming === 'python'){
 
-    //     // res.json(be_export_file.pythonVO_EXE(dataDescription))
+    //     // res.json(be_export_file.pythonModelService(dataDescription))
     // }
     // else if(req_json.programming === 'codeigniter4'){
 
@@ -142,11 +142,11 @@ router.post('/contentIndexTable', async (req, res) => {
     // dataDescription.tbName = req_json.tbName
     // if(req_json.programming === 'nodejs'){
 
-    //     // res.json(be_export_file.nodejsVO_EXE(dataDescription))
+    //     // res.json(be_export_file.nodejsModelService(dataDescription))
     // }
     // else if(req_json.programming === 'python'){
 
-    //     // res.json(be_export_file.pythonVO_EXE(dataDescription))
+    //     // res.json(be_export_file.pythonModelService(dataDescription))
     // }
     // else if(req_json.programming === 'codeigniter4'){
 
