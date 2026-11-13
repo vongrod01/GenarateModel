@@ -1,4 +1,5 @@
 const { header } = require('./header')
+const { describePk, noPkNote } = require('./pk')
 
 function nextjsModelService(dataDescription) {
     // console.table(dataDescription)
@@ -10,6 +11,12 @@ function nextjsModelService(dataDescription) {
         `
     let getterSetterModel = ''
     let paramsListService = ''
+
+    // key columns come from the database (IsPrimaryKey / IsIdentity), not from column names
+    const pk = describePk(dataDescription.dataSet)
+    const keyArgs = pk.join(k => k.FieldName)                           // get(OrderID, LineNo)
+    const keyFromModel = pk.join(k => `DataModel.${k.FieldName}`)       // DataModel.OrderID, DataModel.LineNo
+    const keyFromRow = pk.join(k => `dataset[0].${k.FieldName}`)        // the add procedure OUTPUTs the key
 
     dataDescription.tbName.split('_').forEach(str => {
         // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
@@ -50,13 +57,13 @@ function nextjsModelService(dataDescription) {
 export class ${className}Model extends BaseModel {
     ${constructorModel}
     ${getterSetterModel}
-}   
+}
      `
-    let methodService = `
-    async get(ID) {
+    // get / edit / delete need a key; without one only add and search are generated
+    const methodGet = pk.has ? `    async get(${keyArgs}) {
         try {
 
-            const dataset = await this.callSp('${dataDescription.tbName}_get', { ID })
+            const dataset = await this.callSp('${dataDescription.tbName}_get', { ${keyArgs} })
             if (dataset.length > 0) {
                 this.result.jsonAssignToAttr(dataset[0])
                 return this.result
@@ -70,14 +77,15 @@ export class ${className}Model extends BaseModel {
         }
     }
 
-    async add(DataModel) {
+` : ''
+    const methodAdd = pk.has ? `    async add(DataModel) {
         try {
             let params = {
                 ${paramsListService}
             }
             const dataset = await this.callSp('${dataDescription.tbName}_add', params)
             if (dataset.length > 0) {
-                return this.get(dataset[0].ID)
+                return this.get(${keyFromRow})
             }
             else {
                 return null
@@ -89,13 +97,29 @@ export class ${className}Model extends BaseModel {
         }
     }
 
-    async edit(DataModel) {
+` : `    // ${noPkNote(dataDescription.tbName)}
+    async add(DataModel) {
+        try {
+            let params = {
+                ${paramsListService}
+            }
+            await this.callSp('${dataDescription.tbName}_add', params)
+            return DataModel
+
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_add : ' + error + '******')
+            return null
+        }
+    }
+
+`
+    const methodEdit = pk.has ? `    async edit(DataModel) {
         try {
             let params = {
                 ${paramsListService}
             }
             await this.callSp('${dataDescription.tbName}_edit', params)
-            return this.get(DataModel.ID)
+            return this.get(${keyFromModel})
 
         } catch (error) {
             this.logErrorExec('****** Error ${dataDescription.tbName}_edit : ' + error + '******')
@@ -103,9 +127,10 @@ export class ${className}Model extends BaseModel {
         }
     }
 
-    async delete(ID) {
+` : ''
+    const methodDelete = pk.has ? `    async delete(${keyArgs}) {
         try {
-            await this.callSp('${dataDescription.tbName}_delete', { ID })
+            await this.callSp('${dataDescription.tbName}_delete', { ${keyArgs} })
             return true
 
         } catch (error) {
@@ -114,7 +139,8 @@ export class ${className}Model extends BaseModel {
         }
     }
 
-    async search(DataModel) {
+` : ''
+    const methodSearch = `    async search(DataModel) {
         try {
             let params = {
                 ${paramsListService}
@@ -126,10 +152,12 @@ export class ${className}Model extends BaseModel {
             return []
         }
     }
-     
+
      `
+    let methodService = `
+${methodGet}${methodAdd}${methodEdit}${methodDelete}${methodSearch}`
     classService += `
-export class ${className}Service extends BaseService {   
+export class ${className}Service extends BaseService {
     ${constructorService}
     ${methodService}
 }
@@ -141,11 +169,13 @@ import { BaseModel, BaseService } from './BaseClass'
     ${classModel}
     ${classService}
     `
-    return {
+    let result = {
         export: true,
         content: content,
         fileName: `${className}.js`
     }
+    if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
+    return result
 }
 
 module.exports.nextjsModelService = nextjsModelService

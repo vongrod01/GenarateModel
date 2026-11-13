@@ -286,6 +286,10 @@ body.connected .screen-workspace { display: flex; animation: fade .35s ease; }
   border-radius: 6px; padding: 2px 7px; white-space: nowrap;
 }
 .fields td:nth-child(3) { font-family: var(--mono); font-size: 12px; }
+.pk-badge {
+  margin-left: 8px; padding: 1px 6px; border-radius: 6px; vertical-align: 1px;
+  font-size: 10px; font-weight: 700; letter-spacing: .05em; color: #ffd479; background: rgba(255, 193, 7, .16);
+}
 
 .empty td, .list .empty td { cursor: default; color: var(--ink-4); text-align: center; height: 80px; background: none !important; }
 

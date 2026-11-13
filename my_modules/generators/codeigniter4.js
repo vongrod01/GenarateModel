@@ -1,4 +1,7 @@
 const { header } = require('./header')
+const { describePk, noPkNote } = require('./pk')
+
+const NUMERIC_TYPES = ['int', 'tinyint', 'smallint', 'bigint', 'decimal', 'numeric']
 
 function codeigniterModelService(dataDescription) {
     console.log('dataDescription.databaseName : ', dataDescription.databaseName)
@@ -16,6 +19,15 @@ function codeigniterModelService(dataDescription) {
         fileName: []
     }
     let content = '';
+
+    // key columns come from the database (IsPrimaryKey / IsIdentity), not from column names
+    const pk = describePk(dataDescription.dataSet)
+    const keyArgs = pk.join(k => `$${k.FieldName}`)                       // _Get($OrderID, $LineNo)
+    const keyFromModel = pk.join(k => `$DataModel->${k.FieldName}`)       // $DataModel->OrderID, ...
+    const keyFromRow = pk.join(k => `$${k.FieldName} = $result[0]->${k.FieldName};`, `
+            `)                                                            // the add procedure OUTPUTs the key
+    if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
+
     let getterModel = `
     public function __get($prop_name)
     {
@@ -58,27 +70,32 @@ function codeigniterModelService(dataDescription) {
             case '${field.FieldName}':
                 $this->props[$prop_name] = ${['int', 'tinyint', 'smallint', 'bigint', 'decimal'].includes(field.FieldType) ? '(int)' : ''}$value;
                 break;`
-        if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
-            if (field.FieldName == 'ID') {
 
-                paramsListService.edit += `          $DataModel->${field.FieldName},
+        // call_sp passes parameters by position, so these lists must mirror the stored procedures
+        // (see sql.js): an identity column is never sent to add / edit, a key the database does not
+        // generate is sent to add, edit and search.
+        const param = `          $DataModel->${field.FieldName},
 `
+        if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
+            if (pk.isKey(field)) {
+                paramsListService.edit += param
+                if (pk.isInsertKey(field)) {
+                    paramsListService.add += param
+                    paramsListService.search += param
+                }
             }
             else if (field.FieldName == 'AddBy') {
-                paramsListService.add += `          $DataModel->${field.FieldName},
-`
+                paramsListService.add += param
             }
             else if (field.FieldName == 'UpdateBy') {
-                paramsListService.edit += `          $DataModel->${field.FieldName},
-`
+                paramsListService.edit += param
             }
             else {
-                paramsListService.add += `          $DataModel->${field.FieldName},
-`
-                paramsListService.search += `          $DataModel->${field.FieldName},
-`
-                paramsListService.edit += `          $DataModel->${field.FieldName},
-`
+                paramsListService.search += param
+                if (!pk.isIdentity(field)) {
+                    paramsListService.add += param
+                    paramsListService.edit += param
+                }
             }
 
         }
@@ -130,22 +147,23 @@ ${setterModel}
     {
         parent::__construct($conn_group);
         $this->_result = new ${className}Model();
-    }        
+    }
     `
 
-    let methodService = `
-    public function _Get($ID)
+    // get / edit / delete need a key; without one only add and search are generated
+    const methodGet = pk.has ? `    public function _Get(${keyArgs})
     {
-        $this->call_sp('${tbFullName}_get', [$ID]);
+        $this->call_sp('${tbFullName}_get', [${keyArgs}]);
         if (count($this->data_set) > 0) {
             $this->_result->dataAssignToProps($this->data_set[0]);
             return $this->_result;
         } else {
             return null;
-        }  
+        }
     }
 
-    public function _Search($DataModel)
+` : ''
+    const methodSearch = `    public function _Search($DataModel)
     {
         $params = [
             ${paramsListService.search}
@@ -153,41 +171,56 @@ ${setterModel}
         return $this->call_sp('${tbFullName}_search', $params);
     }
 
-    public function _Add($DataModel)
+`
+    const methodAdd = pk.has ? `    public function _Add($DataModel)
     {
         $params = [
             ${paramsListService.add}
         ];
         $result = $this->call_sp('${tbFullName}_add', $params);
         if ($result != null and count($result) > 0) {
-            $ID = $result[0]->ID;
-            return $this->_Get($ID);
+            ${keyFromRow}
+            return $this->_Get(${keyArgs});
         } else {
             return null;
         }
     }
 
-    public function _Edit($DataModel)
+` : `    // ${noPkNote(dataDescription.tbName)}
+    public function _Add($DataModel)
+    {
+        $params = [
+            ${paramsListService.add}
+        ];
+        $this->call_sp('${tbFullName}_add', $params);
+        return $DataModel;
+    }
+
+`
+    const methodEdit = pk.has ? `    public function _Edit($DataModel)
     {
         $params = [
             ${paramsListService.edit}
         ];
         $this->call_sp('${tbFullName}_edit', $params);
-        return $this->_Get($DataModel->ID);
+        return $this->_Get(${keyFromModel});
     }
-    
-    public function _Delete($ID)
+
+` : ''
+    const methodDelete = pk.has ? `    public function _Delete(${keyArgs})
     {
-        $this->call_sp('${tbFullName}_delete', [$ID]);
-        if($this->_Get($ID) === null){
+        $this->call_sp('${tbFullName}_delete', [${keyArgs}]);
+        if($this->_Get(${keyArgs}) === null){
             return true;
         }
         else{
             return false;
         }
     }
-     
-     `
+
+     ` : ''
+    let methodService = `
+${methodGet}${methodSearch}${methodAdd}${methodEdit}${methodDelete}`
     content = `<?php namespace App\\My_Models;
 /*\n${header()}*/
 
@@ -221,6 +254,74 @@ function codeigniterController(dataDescription) {
         content: '',
         fileName: ''
     }
+
+    // key columns come from the database (IsPrimaryKey), not from column names
+    const pk = describePk(dataDescription.dataSet)
+    const keyArgs = pk.join(k => `$${k.FieldName}`)
+    const isNumeric = (k) => NUMERIC_TYPES.includes(k.FieldType)
+    // read each key from the request; a key counts as present when it is not null / 0 (numbers) or not '' (text)
+    const keyRead = pk.join(k => `$${k.FieldName} = ${isNumeric(k) ? '(int)' : '(string)'}$this->request->getVar("${k.FieldName}");`, `
+            `)
+    const keyPresent = pk.join(k => isNumeric(k)
+        ? `$${k.FieldName} !== null and $${k.FieldName} !== 0`
+        : `$${k.FieldName} !== null and $${k.FieldName} !== ''`, ' and ')
+    if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
+
+    const M = `$${className}Model`
+    const S = `$${className}Service`
+    // [condition, body] per HTTP method; get / put / delete by key only exist when the table has a key
+    const branches = []
+    if (pk.has) {
+        branches.push([`$method == "get" and ${keyPresent}`, `                // GET
+
+                if (${S}->_Get(${keyArgs}) !== null) {
+                    ${S}->_result->assignTo(${M});
+                    return $this->respond(${M}->getProps(), 200);
+                } else {
+                    return $this->respond(["Message" => "No Content"], 200);
+                }
+`])
+    }
+    branches.push([`$method == "get"`, `                // SEARCH
+                ${M}->dataAssignToProps($data_req);
+                ${S}->_Search(${M});
+                return $this->respond(${S}->data_set, 200);
+`])
+    branches.push([`$method == "post"`, `                // ADD
+                ${M}->dataAssignToProps($data_req);
+                if (${S}->_Add(${M}) !== null) {
+                    ${S}->_result->assignTo(${M});
+                    return $this->respond(${M}->getProps(), 200);
+                } else {
+                    return $this->respond(["Message" => "Not Modified"], 200);
+                }
+`])
+    if (pk.has) {
+        branches.push([`$method == "put"`, `                // EDIT
+                if (${S}->_Get(${keyArgs}) !== null) {
+                    ${S}->_result->assignTo(${M});
+                    ${M}->dataAssignToProps($data_req);
+                    if (${S}->_Edit(${M}) !== null) {
+                        ${S}->_result->assignTo(${M});
+                        return $this->respond(${M}->getProps(), 200);
+                    } else {
+                        return $this->respond(["Message" => "Not Modified"], 200);
+                    }
+                } else {
+                    return $this->respond(["Message" => "Not Modified"], 200);
+                }
+`])
+        branches.push([`$method == "delete"`, `                // DELETE
+                if (${S}->_Delete(${keyArgs})) {
+                    return $this->respond(["Message" => "Successfully deleted data"], 200);
+                } else {
+                    return $this->respond(["Message" => "Not Modified"], 200);
+                }
+`])
+    }
+    const chain = branches.map(([cond, body], i) => `            ${i === 0 ? 'if' : '} elseif'} (${cond}) {
+${body}`).join('') + '            }\n'
+
     let content = `<?php namespace App\\Controllers;
 /*\n${header()}*/
 
@@ -235,55 +336,10 @@ class ${className}Controller extends ResourceController
         try {
             $method = $this->request->getMethod();
             $data_req = $this->request->getVar();
-            $ID = (int)$this->request->getVar("ID");
-            $${className}Model = new ${className}Model();
-            $${className}Service = new ${className}Service();
-            if ($method == "get" and $ID !== null and $ID !== 0) {
-                // GET
-
-                if ($${className}Service->_Get($ID) !== null) {
-                    $${className}Service->_result->assignTo($${className}Model);
-                    return $this->respond($${className}Model->getProps(), 200);
-                } else {
-                    return $this->respond(["Message" => "No Content"], 200);
-                }
-            } elseif ($method == "get") {
-                // SEARCH
-                $${className}Model->dataAssignToProps($data_req);
-                $${className}Service->_Search($${className}Model);
-                return $this->respond($${className}Service->data_set, 200);
-            } elseif ($method == "post") {
-                // ADD
-                $${className}Model->dataAssignToProps($data_req);
-                if ($${className}Service->_Add($${className}Model) !== null) {
-                    $${className}Service->_result->assignTo($${className}Model);
-                    return $this->respond($${className}Model->getProps(), 200);
-                } else {
-                    return $this->respond(["Message" => "Not Modified"], 200);
-                }
-            } elseif ($method == "put") {
-                // EDIT
-                if ($${className}Service->_Get($ID) !== null) {
-                    $${className}Service->_result->assignTo($${className}Model);
-                    $${className}Model->dataAssignToProps($data_req);
-                    if ($${className}Service->_Edit($${className}Model) !== null) {
-                        $${className}Service->_result->assignTo($${className}Model);
-                        return $this->respond($${className}Model->getProps(), 200);
-                    } else {
-                        return $this->respond(["Message" => "Not Modified"], 200);
-                    }
-                } else {
-                    return $this->respond(["Message" => "Not Modified"], 200);
-                }
-            } elseif ($method == "delete") {
-                // DELETE
-                if ($${className}Service->_Delete($ID)) {
-                    return $this->respond(["Message" => "Successfully deleted data"], 200);
-                } else {
-                    return $this->respond(["Message" => "Not Modified"], 200);
-                }
-            }
-        } catch (\\Throwable $th) {
+            ${pk.has ? keyRead : `// ${noPkNote(dataDescription.tbName)}`}
+            ${M} = new ${className}Model();
+            ${S} = new ${className}Service();
+${chain}        } catch (\\Throwable $th) {
             return $this->respond(["error" => $th->getMessage()], 404);
         }
     }

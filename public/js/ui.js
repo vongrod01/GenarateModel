@@ -15,6 +15,7 @@
         clearTimeout(toastTimer)
         toastTimer = setTimeout(() => { el.hidden = true }, 4000)
     }
+    window.heartToast = toast
     if (typeof window.Swal === 'undefined') {
         window.Swal = {
             fire(title, text, icon) {

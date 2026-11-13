@@ -1,4 +1,5 @@
 const { header } = require('./header')
+const { describePk, noPkNote } = require('./pk')
 
 function nodejsModelService(dataDescription) {
     // console.table(dataDescription)
@@ -10,6 +11,16 @@ function nodejsModelService(dataDescription) {
         `
     let getterSetterModel = ''
     let paramsListService = ''
+
+    // key columns come from the database (IsPrimaryKey / IsIdentity), not from column names
+    const pk = describePk(dataDescription.dataSet)
+    const keyArgs = pk.join(k => k.FieldName)                           // get(OrderID, LineNo)
+    // after add / edit the key is read back: an identity key comes back in its OUT parameter
+    // (position = its place in the parameter list), a key the caller supplied is taken from the model
+    const keyReadBack = pk.join(k => `let ${k.FieldName} = ${pk.isIdentity(k)
+        ? `this.paramsOut.Param${pk.indexOf(k) + 1}`
+        : `DataModel.${k.FieldName}`}`, `
+            `)
 
     dataDescription.tbName.split('_').forEach(str => {
         // ตัด "_" ออก แล้วเปลี่ยนตัวอักษรแรกเป็นพิมพ์ใหญ่
@@ -50,13 +61,13 @@ function nodejsModelService(dataDescription) {
 class ${className}Model extends BaseClass.BaseModel {
     ${constructorModel}
     ${getterSetterModel}
-}   
+}
      `
-    let methodService = `
-    async get(RxNo) {
+    // get / edit / delete need a key; without one only add and search are generated
+    const methodGet = pk.has ? `    async get(${keyArgs}) {
         try {
 
-            await this.callSp('${dataDescription.tbName}_get', [RxNo])
+            await this.callSp('${dataDescription.tbName}_get', [${keyArgs}])
             if (this.dataSet.length > 0) {
                 this.result.jsonAssignToAttr(this.dataSet[0])
                 return this.result
@@ -71,14 +82,15 @@ class ${className}Model extends BaseClass.BaseModel {
         }
     }
 
-    async add(DataModel) {
+` : ''
+    const methodAdd = pk.has ? `    async add(DataModel) {
         try {
             let params = [
                 ${paramsListService}
             ]
             await this.callSp('${dataDescription.tbName}_add', params)
-            let RxNo = this.paramsOut.Param1
-            return this.get(RxNo)
+            ${keyReadBack}
+            return this.get(${keyArgs})
 
         } catch (error) {
             this.logErrorExec('****** Error ${dataDescription.tbName}_add : ' + error + '******')
@@ -87,14 +99,31 @@ class ${className}Model extends BaseClass.BaseModel {
         }
     }
 
-    async edit(DataModel) {
+` : `    // ${noPkNote(dataDescription.tbName)}
+    async add(DataModel) {
+        try {
+            let params = [
+                ${paramsListService}
+            ]
+            await this.callSp('${dataDescription.tbName}_add', params)
+            return DataModel
+
+        } catch (error) {
+            this.logErrorExec('****** Error ${dataDescription.tbName}_add : ' + error + '******')
+            this.dataSet = []
+            return null
+        }
+    }
+
+`
+    const methodEdit = pk.has ? `    async edit(DataModel) {
         try {
             let params = [
                 ${paramsListService}
             ]
             await this.callSp('${dataDescription.tbName}_edit', params)
-            let RxNo = this.paramsOut.Param1
-            return this.get(RxNo)
+            ${keyReadBack}
+            return this.get(${keyArgs})
 
         } catch (error) {
             this.logErrorExec('****** Error ${dataDescription.tbName}_edit : ' + error + '******')
@@ -103,9 +132,10 @@ class ${className}Model extends BaseClass.BaseModel {
         }
     }
 
-    async delete(RxNo) {
+` : ''
+    const methodDelete = pk.has ? `    async delete(${keyArgs}) {
         try {
-            await this.callSp('${dataDescription.tbName}_delete', [RxNo])
+            await this.callSp('${dataDescription.tbName}_delete', [${keyArgs}])
             return true
 
         } catch (error) {
@@ -114,7 +144,8 @@ class ${className}Model extends BaseClass.BaseModel {
         }
     }
 
-    async search(DataModel) {
+` : ''
+    const methodSearch = `    async search(DataModel) {
         try {
             let params = [
                 ${paramsListService}
@@ -127,10 +158,12 @@ class ${className}Model extends BaseClass.BaseModel {
         }
         return this.dataSet
     }
-     
+
      `
+    let methodService = `
+${methodGet}${methodAdd}${methodEdit}${methodDelete}${methodSearch}`
     classService += `
-class ${className}Service extends BaseClass.BaseService {   
+class ${className}Service extends BaseClass.BaseService {
     ${constructorService}
     ${methodService}
 }
@@ -143,11 +176,13 @@ const BaseClass = require('./BaseClass')
 module.exports.${className}Model = ${className}Model
 module.exports.${className}Service = ${className}Service
     `
-    return {
+    let result = {
         export: true,
         content: content,
         fileName: `${className}.js`
     }
+    if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
+    return result
 }
 
 module.exports.nodejsModelService = nodejsModelService

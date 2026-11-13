@@ -97,7 +97,7 @@ async function getTableDescription(el) {
             innerHTML += `
             <tr> 
                
-                <td>${desciption.FieldName}</td>
+                <td>${desciption.FieldName}${Number(desciption.IsPrimaryKey) === 1 ? `<span class="pk-badge" title="Primary key${Number(desciption.IsIdentity) === 1 ? ' · identity' : ''}">PK</span>` : ''}</td>
                 <td>${desciption.FieldType}</td>
                 <td>${desciption.FieldTypeDefine}</td>
                 <td>${desciption.FieldSize}</td>

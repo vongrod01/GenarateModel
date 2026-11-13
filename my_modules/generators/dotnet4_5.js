@@ -1,4 +1,127 @@
 const { header } = require('./header')
+const { describePk, noPkNote } = require('./pk')
+
+function genType(field) {
+    const t = (field.FieldType || '').toLowerCase().trim();
+    const isNullable = !!field.IsNullable;
+
+    const nullable = (csType, isValueType = true) => {
+        if (!isNullable) return csType;
+        if (!isValueType) return csType; // string/byte[] ไม่ต้อง ?
+        return `${csType}?`;
+    };
+
+    // Date/Time => string ตามที่คุณต้องการ
+    if (['date', 'datetime', 'datetime2', 'smalldatetime', 'time', 'datetimeoffset'].includes(t)) {
+        return nullable('string', false);
+    }
+
+    // string types
+    if (['char', 'varchar', 'nchar', 'nvarchar', 'text', 'ntext', 'xml'].includes(t)) {
+        return nullable('string', false);
+    }
+
+    // Boolean
+    if (t === 'bit') return nullable('bool', true);
+
+    // Integers
+    if (t === 'tinyint') return nullable('int', true);
+    if (t === 'smallint') return nullable('int', true);
+    if (t === 'int') {
+        return nullable(`int${field.FieldName == 'DeleteBy' ? '?' : ''}`, true);
+    }
+    if (t === 'bigint') return nullable('int', true);
+
+    // Decimal / Numeric / Money
+    if (['decimal', 'numeric', 'money', 'smallmoney'].includes(t)) return nullable('decimal', true);
+
+    // Floating
+    if (t === 'float') return nullable('double', true);
+    if (t === 'real') return nullable('float', true);
+
+    // Guid
+    if (t === 'uniqueidentifier') return nullable('Guid', true);
+
+    // Binary / Blob
+    if (['binary', 'varbinary', 'image', 'rowversion', 'timestamp'].includes(t)) return 'byte[]';
+
+    // fallback
+    return 'object';
+}
+
+const SQL_DB_TYPE = {
+    nvarchar: "SqlDbType.NVarChar",
+    varchar: "SqlDbType.VarChar",
+    char: "SqlDbType.Char",
+    nchar: "SqlDbType.NChar",
+    uniqueidentifier: "SqlDbType.UniqueIdentifier",
+    int: "SqlDbType.Int",
+    bigint: "SqlDbType.BigInt",
+    smallint: "SqlDbType.SmallInt",
+    tinyint: "SqlDbType.TinyInt",
+    bit: "SqlDbType.Bit",
+    datetime: "SqlDbType.DateTime",
+    date: "SqlDbType.Date",
+    decimal: "SqlDbType.Decimal",
+    numeric: "SqlDbType.Decimal"
+};
+
+function genSqlParameter(field) {
+    const sqlType = SQL_DB_TYPE[field.FieldType.toLowerCase()] || "SqlDbType.Variant";
+    const name = field.FieldName;
+
+    // ถ้ามี size เช่น nvarchar(500)
+    if (field.FieldSize && field.FieldSize > 0) {
+        return `cmd.Parameters.Add("@${name}", ${sqlType}, ${field.FieldSize}).Value = data.${name};`;
+    }
+
+    return `cmd.Parameters.Add("@${name}", ${sqlType}).Value = data.${name};`;
+}
+
+// ---------- primary key ----------
+// The key columns come from the database (describePk), and their C# type follows the same mapping
+// as the model properties, so the key is no longer assumed to be `int id`.
+
+const CS_RESERVED = new Set(['abstract', 'as', 'base', 'bool', 'break', 'byte', 'case', 'catch', 'char', 'checked', 'class', 'const', 'continue', 'decimal', 'default', 'delegate', 'do', 'double', 'else', 'enum', 'event', 'explicit', 'extern', 'false', 'finally', 'fixed', 'float', 'for', 'foreach', 'goto', 'if', 'implicit', 'in', 'int', 'interface', 'internal', 'is', 'lock', 'long', 'namespace', 'new', 'null', 'object', 'operator', 'out', 'override', 'params', 'private', 'protected', 'public', 'readonly', 'ref', 'return', 'sbyte', 'sealed', 'short', 'sizeof', 'static', 'string', 'struct', 'switch', 'this', 'throw', 'true', 'try', 'typeof', 'uint', 'ulong', 'unchecked', 'unsafe', 'ushort', 'using', 'virtual', 'void', 'volatile', 'while']);
+
+// per C# type: default value for an optional action argument, "no key given" test, and how to read it from a reader
+const KEY_KINDS = {
+    int: { def: '0', missing: v => `${v} <= 0`, read: r => `${r} == DBNull.Value ? 0 : Convert.ToInt32(${r})`, sample: '1' },
+    decimal: { def: '0m', missing: v => `${v} <= 0`, read: r => `${r} == DBNull.Value ? 0 : Convert.ToDecimal(${r})`, sample: '1' },
+    string: { def: 'null', missing: v => `string.IsNullOrEmpty(${v})`, read: r => `${r} == DBNull.Value ? "" : ${r}.ToString()`, sample: 'value' },
+    Guid: { def: 'default(Guid)', missing: v => `${v} == Guid.Empty`, read: r => `${r} == DBNull.Value ? Guid.Empty : (Guid)${r}`, sample: 'value' },
+    object: { def: 'null', missing: v => `${v} == null`, read: r => `${r} == DBNull.Value ? null : ${r}`, sample: 'value' }
+};
+
+// C# facts about one key column: ID -> id, OrderID -> orderID, DrugCode -> drugCode
+function keyInfo(field) {
+    const csType = genType(Object.assign({}, field, { IsNullable: false }));   // a key is never null
+    const kind = KEY_KINDS[csType] || KEY_KINDS.object;
+    const n = field.FieldName;
+    const lowered = n === n.toUpperCase() ? n.toLowerCase() : n[0].toLowerCase() + n.slice(1);
+    const name = CS_RESERVED.has(lowered) ? '@' + lowered : lowered;
+    return {
+        field,
+        csType: KEY_KINDS[csType] ? csType : 'object',
+        name,
+        param: `${KEY_KINDS[csType] ? csType : 'object'} ${name}`,
+        paramWithDefault: `${KEY_KINDS[csType] ? csType : 'object'} ${name} = ${kind.def}`,
+        missing: kind.missing(name),
+        read: (readerExpr) => kind.read(readerExpr),
+        sample: kind.sample
+    };
+}
+
+// stored-procedure parameter bound to a value expression (an argument or data.X); size only for text types
+function genKeyParameter(field, valueExpr) {
+    const t = field.FieldType.toLowerCase();
+    const sqlType = SQL_DB_TYPE[t] || "SqlDbType.Variant";
+    const isText = ['varchar', 'nvarchar', 'char', 'nchar'].includes(t);
+    if (isText && field.FieldSize && field.FieldSize > 0) {
+        return `cmd.Parameters.Add("@${field.FieldName}", ${sqlType}, ${field.FieldSize}).Value = ${valueExpr};`;
+    }
+    return `cmd.Parameters.Add("@${field.FieldName}", ${sqlType}).Value = ${valueExpr};`;
+}
 
 function dotNet4_5Controller(dataDescription,nameSpace = '') {
     let className = ''
@@ -15,6 +138,15 @@ function dotNet4_5Controller(dataDescription,nameSpace = '') {
         content: '',
         fileName: ''
     }
+
+    // key columns come from the database (IsPrimaryKey), not from column names; get / edit / delete need one
+    const pk = describePk(dataDescription.dataSet)
+    const keys = pk.map(keyInfo)
+    const keyParams = keys.map(k => k.paramWithDefault).join(', ')     // int orderID = 0, int lineNo = 0
+    const keyArgs = keys.map(k => k.name).join(', ')                   // orderID, lineNo
+    const keyQuery = keys.map(k => `${k.name}=${k.sample}`).join('&')  // orderID=1&lineNo=1
+    if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
+
     let content = `/*\n${header()}*/
 using System;
 using System.Collections.Generic;
@@ -32,9 +164,9 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
             public object Error { get; set; }
         }
 
-        // GET: /${className}/get?id=1
+${pk.has ? `        // GET: /${className}/get?${keyQuery}
         [HttpGet]
-        public JsonResult get(int id = 0)
+        public JsonResult get(${keyParams})
         {
 
             try
@@ -54,7 +186,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
                     */
                 };
 
-                if (${instanceService}.Get(id) != null)
+                if (${instanceService}.Get(${keyArgs}) != null)
                 {
                     ${instanceService}.Result.AssignTo(${instanceModel});
                     result.Data = new List<Dictionary<string, object>> { ${instanceModel}.ToDict() };
@@ -75,7 +207,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
             }
         }
 
-        // POST: /${className}/add
+` : ''}        // POST: /${className}/add
         // Content-Type: application/json
         [HttpPost]
         public JsonResult add(${className}Model data)
@@ -128,7 +260,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
             }
         }
 
-        // POST: /${className}/edit
+${pk.has ? `        // POST: /${className}/edit
         [HttpPost]
         public JsonResult edit(${className}Model data)
         {
@@ -180,7 +312,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
             }
         }
 
-        // GET: /${className}/search?param1=value1&param2=value2.......
+` : ''}        // GET: /${className}/search?param1=value1&param2=value2.......
         [HttpGet]
         public JsonResult search(${className}Model data)
         {
@@ -217,7 +349,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
             }
         }
 
-        // POST: /${className}/delete
+${pk.has ? `        // POST: /${className}/delete
         // Content-Type: application/json
         [HttpPost]
         public JsonResult delete(${className}Model data)
@@ -263,7 +395,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Controllers\n{` : ''}
                 return Json(result, JsonRequestBehavior.AllowGet);
             }
         }
-    }
+` : ''}    }
 ${nameSpace.trim() != '' ? `}` : ''}
     `;
 
@@ -292,6 +424,18 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
     }
     let content = '';
 
+    // key columns come from the database (IsPrimaryKey / IsIdentity), not from column names
+    const pk = describePk(dataDescription.dataSet)
+    const keys = pk.map(keyInfo)
+    const keyParams = keys.map(k => k.param).join(', ')                        // int orderID, int lineNo
+    const keyArgs = keys.map(k => k.name).join(', ')                           // orderID, lineNo
+    const keyMissing = keys.map(k => k.missing).join(' || ')                   // orderID <= 0 || lineNo <= 0
+    const keyFromData = pk.join(k => `data.${k.FieldName}`)                    // data.OrderID, data.LineNo
+    const keyFromReader = keys.map(k => k.read(`reader["${k.field.FieldName}"]`)).join(', ')   // the add procedure OUTPUTs the key
+    const keyBind = (valueOf) => keys.map(k => genKeyParameter(k.field, valueOf(k))).join(`
+                    `)
+    if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
+
     let paramsListService = {
         'add': '',
         'edit': '',
@@ -303,54 +447,6 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
     let mapResult = ''
     // Construct
     dataDescription.dataSet.forEach(field => {
-        function genType(field) {
-            const t = (field.FieldType || '').toLowerCase().trim();
-            const isNullable = !!field.IsNullable;
-
-            const nullable = (csType, isValueType = true) => {
-                if (!isNullable) return csType;
-                if (!isValueType) return csType; // string/byte[] ไม่ต้อง ?
-                return `${csType}?`;
-            };
-
-            // Date/Time => string ตามที่คุณต้องการ
-            if (['date', 'datetime', 'datetime2', 'smalldatetime', 'time', 'datetimeoffset'].includes(t)) {
-                return nullable('string', false);
-            }
-
-            // string types
-            if (['char', 'varchar', 'nchar', 'nvarchar', 'text', 'ntext', 'xml'].includes(t)) {
-                return nullable('string', false);
-            }
-
-            // Boolean
-            if (t === 'bit') return nullable('bool', true);
-
-            // Integers
-            if (t === 'tinyint') return nullable('int', true);
-            if (t === 'smallint') return nullable('int', true);
-            if (t === 'int') {
-                return nullable(`int${field.FieldName == 'DeleteBy' ? '?' : ''}`, true);
-            }
-            if (t === 'bigint') return nullable('int', true);
-
-            // Decimal / Numeric / Money
-            if (['decimal', 'numeric', 'money', 'smallmoney'].includes(t)) return nullable('decimal', true);
-
-            // Floating
-            if (t === 'float') return nullable('double', true);
-            if (t === 'real') return nullable('float', true);
-
-            // Guid
-            if (t === 'uniqueidentifier') return nullable('Guid', true);
-
-            // Binary / Blob
-            if (['binary', 'varbinary', 'image', 'rowversion', 'timestamp'].includes(t)) return 'byte[]';
-
-            // fallback
-            return 'object';
-        }
-
         function genInitValue(field, csType) {
             const isNullable = !!field.IsNullable;
             const t = (field.FieldType || '').toLowerCase().trim();
@@ -390,32 +486,6 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
                     // กันพลาด: ถ้าเป็น value type อื่น ๆ ให้ไม่ init
                     return null;
             }
-        }
-
-        function genSqlParameter(field) {
-            const typeMap = {
-                nvarchar: "SqlDbType.NVarChar",
-                varchar: "SqlDbType.VarChar",
-                int: "SqlDbType.Int",
-                bigint: "SqlDbType.BigInt",
-                smallint: "SqlDbType.SmallInt",
-                tinyint: "SqlDbType.TinyInt",
-                bit: "SqlDbType.Bit",
-                datetime: "SqlDbType.DateTime",
-                date: "SqlDbType.Date",
-                decimal: "SqlDbType.Decimal",
-                numeric: "SqlDbType.Decimal"
-            };
-
-            const sqlType = typeMap[field.FieldType.toLowerCase()] || "SqlDbType.Variant";
-            const name = field.FieldName;
-
-            // ถ้ามี size เช่น nvarchar(500)
-            if (field.FieldSize && field.FieldSize > 0) {
-                return `cmd.Parameters.Add("@${name}", ${sqlType}, ${field.FieldSize}).Value = data.${name};`;
-            }
-
-            return `cmd.Parameters.Add("@${name}", ${sqlType}).Value = data.${name};`;
         }
 
         function genMapResultLine(field, options = {}) {
@@ -501,9 +571,17 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
 
 
         if (field.FieldName != 'AddWhen' && field.FieldName != 'UpdateWhen' && field.FieldName != 'DeleteBy' && field.FieldName != 'DeleteWhen') {
-            if (field.FieldName == 'ID') {
+            // positional / named parameters must mirror the stored procedures (see sql.js): an identity
+            // column is never sent to add / edit, a key the database does not generate is sent to add, edit and search
+            if (pk.isKey(field)) {
                 paramsListService.edit += `          ${genSqlParameter(field)}
 `
+                if (pk.isInsertKey(field)) {
+                    paramsListService.add += `          ${genSqlParameter(field)}
+`
+                    paramsListService.search += `       ${genSqlParameter(field)}
+`
+                }
             }
             else if (field.FieldName == 'AddBy') {
                 paramsListService.add += `          ${genSqlParameter(field)}
@@ -514,12 +592,14 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
 `
             }
             else {
-                paramsListService.add += `          ${genSqlParameter(field)}
-`
                 paramsListService.search += `       ${genSqlParameter(field)}
 `
-                paramsListService.edit += `         ${genSqlParameter(field)}
+                if (!pk.isIdentity(field)) {
+                    paramsListService.add += `          ${genSqlParameter(field)}
 `
+                    paramsListService.edit += `         ${genSqlParameter(field)}
+`
+                }
             }
 
 
@@ -567,9 +647,9 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
         public ${className}Model Result { get; private set; } = new ${className}Model();
         public List<Dictionary<string, object>> Dataset { get; private set; }
 
-        public ${className}Model Get(int id)
+${pk.has ? `        public ${className}Model Get(${keyParams})
         {
-            if (id <= 0) return null;
+            if (${keyMissing}) return null;
 
             const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_get";
             try
@@ -578,7 +658,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
                 using (SqlCommand cmd = new SqlCommand(procedureName, conn))
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
-                    cmd.Parameters.Add("@ID", SqlDbType.Int).Value = id;
+                    ${keyBind(k => k.name)}
 
                     if (conn.State != ConnectionState.Open)
                     conn.Open();
@@ -599,7 +679,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
             }
         }
 
-        public ${className}Model Add(${className}Model data)
+` : ''}        public ${className}Model Add(${className}Model data)
         {
             const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_add";
 
@@ -615,13 +695,16 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
                     if (conn.State != ConnectionState.Open)
                         conn.Open();
 
-                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    ${pk.has ? `using (SqlDataReader reader = cmd.ExecuteReader())
                     {
                         if (!reader.Read())
                             return null;
 
-                        return this.Get(reader["ID"] == DBNull.Value ? 0 : Convert.ToInt32(reader["ID"]));
-                    }
+                        return this.Get(${keyFromReader});
+                    }` : `// ${noPkNote(dataDescription.tbName)}
+                    cmd.ExecuteNonQuery();
+                    data.AssignTo(this.Result);
+                    return this.Result;`}
                 }
             }
             catch (Exception ex)
@@ -630,7 +713,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
             }   
         }
 
-        public ${className}Model Edit(${className}Model data)
+${pk.has ? `        public ${className}Model Edit(${className}Model data)
         {
 
             const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_edit";
@@ -649,7 +732,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        return this.Get(data.ID);
+                        return this.Get(${keyFromData});
                     }
                 }
             }
@@ -659,7 +742,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
             }   
         }
 
-        public void Search(${className}Model data)
+` : ''}        public void Search(${className}Model data)
         {
             const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_search";
 
@@ -687,7 +770,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
             }
         }
 
-        public Boolean Delete(${className}Model data)
+${pk.has ? `        public Boolean Delete(${className}Model data)
         {
             const string procedureName = "${dataDescription.databaseName}.dbo.${dataDescription.tbName}_delete";
             try
@@ -697,7 +780,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
                 {
                     cmd.CommandType = CommandType.StoredProcedure;
 
-                    cmd.Parameters.Add("@ID", SqlDbType.Int).Value = data.ID;
+                    ${keyBind(k => `data.${k.field.FieldName}`)}
                     cmd.Parameters.Add("@DeleteBy", SqlDbType.Int).Value = data.DeleteBy;
 
                     if (conn.State != ConnectionState.Open)
@@ -705,7 +788,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        if (this.Get(data.ID) != null && this.Result.DeleteWhen != null)
+                        if (this.Get(${keyFromData}) != null && this.Result.DeleteWhen != null)
                         {
                             return true;
                         }
@@ -722,7 +805,7 @@ ${nameSpace.trim() != '' ? `namespace ${nameSpace.trim()}.Services\n{` : ''}
             }
         }
 
-        private void MapResult(SqlDataReader reader)
+` : ''}        private void MapResult(SqlDataReader reader)
         {
         ${mapResult}
         }

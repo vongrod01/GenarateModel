@@ -135,11 +135,17 @@ document.getElementById('btnExportIndexTable').onclick = async function () {
 }
 
 
+// a generator may attach a warning, e.g. the table has no primary key so get / edit / delete were skipped
+function notifyWarning(dataRes) {
+    if (dataRes && dataRes.warning && typeof window.heartToast === 'function') window.heartToast(dataRes.warning)
+}
+
 async function exportModelService(connDetail) {
     return new Promise(async (resolve, reject) => {
         try {
             console.log("exportModelService : ", { connDetail })
             await reqAndRes('/contentModelService', 'POST', connDetail, async (dataRes) => {
+                notifyWarning(dataRes)
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
@@ -175,6 +181,7 @@ async function exportController(connDetail) {
         try {
 
             await reqAndRes('/contentController', 'POST', connDetail, async (dataRes) => {
+                notifyWarning(dataRes)
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {
@@ -210,6 +217,7 @@ async function exportStoreProcedure(connDetail) {
         try {
 
             await reqAndRes('/contentStoreProcedure', 'POST', connDetail, async (dataRes) => {
+                notifyWarning(dataRes)
                 if (dataRes.export) {
                     if (Array.isArray(dataRes.content)) {
                         for (let i = 0; i < dataRes.content.length; i++) {

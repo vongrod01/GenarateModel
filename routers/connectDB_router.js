@@ -135,11 +135,10 @@ USE information_schema;
         WHEN 'PRI' THEN 1                                          
         ELSE 0                                                       
       END AS IsPrimaryKey,                                           
-      CASE COALESCE(COLUMNS.COLUMN_NAME,'')                      
-        WHEN 'RxNo' THEN 1                                         
-        WHEN 'RecNo' THEN 1                                        
-        ELSE 0                                                       
-      END IsRunningKey,                                              
+      CASE
+        WHEN COLUMNS.EXTRA LIKE '%auto_increment%' THEN 1
+        ELSE 0
+      END AS IsIdentity,
                                                                      
       CASE COALESCE(COLUMNS.COLUMN_NAME,'')                      
         WHEN 'AddBy' THEN 1                                        
@@ -203,18 +202,40 @@ USE information_schema;
                 }
             }
             let mssql = new connMssql.MssqlConnection(config)
+            // IsPrimaryKey / IsIdentity come from the catalog (not from column names), and are what the
+            // generators use as the key. sys.* is read through the [database] prefix because the
+            // connection has no default database.
             let sqlStr = `
-                select 
-                COLUMN_NAME as FieldName,
-                DATA_TYPE as FieldType,
+                select
+                c.COLUMN_NAME as FieldName,
+                c.DATA_TYPE as FieldType,
                 '' as FieldTypeDefine,
-                case when CHARACTER_MAXIMUM_LENGTH is not null then
-                CHARACTER_MAXIMUM_LENGTH
-                when NUMERIC_PRECISION is not null then
-                NUMERIC_PRECISION
+                case when c.CHARACTER_MAXIMUM_LENGTH is not null then
+                c.CHARACTER_MAXIMUM_LENGTH
+                when c.NUMERIC_PRECISION is not null then
+                c.NUMERIC_PRECISION
                 else '' end as FieldSize,
-                NUMERIC_SCALE as NumericScale
-                from ${databaseName}.INFORMATION_SCHEMA.COLUMNS where  TABLE_NAME = '${tbName}'
+                c.NUMERIC_SCALE as NumericScale,
+                case when pk.COLUMN_NAME is not null then 1 else 0 end as IsPrimaryKey,
+                case when sc.is_identity = 1 then 1 else 0 end as IsIdentity
+                from [${databaseName}].INFORMATION_SCHEMA.COLUMNS c
+                left join (
+                    select kcu.TABLE_SCHEMA, kcu.TABLE_NAME, kcu.COLUMN_NAME
+                    from [${databaseName}].INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                    join [${databaseName}].INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                      on kcu.CONSTRAINT_SCHEMA = tc.CONSTRAINT_SCHEMA
+                     and kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+                     and kcu.TABLE_NAME = tc.TABLE_NAME
+                    where tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                ) pk
+                  on pk.TABLE_SCHEMA = c.TABLE_SCHEMA
+                 and pk.TABLE_NAME = c.TABLE_NAME
+                 and pk.COLUMN_NAME = c.COLUMN_NAME
+                left join [${databaseName}].sys.schemas ss on ss.name = c.TABLE_SCHEMA
+                left join [${databaseName}].sys.tables st on st.name = c.TABLE_NAME and st.schema_id = ss.schema_id
+                left join [${databaseName}].sys.columns sc on sc.object_id = st.object_id and sc.name = c.COLUMN_NAME
+                where c.TABLE_NAME = '${tbName}'
+                order by c.ORDINAL_POSITION
             `
             // console.log(sqlStr)
             await mssql.execSQL(sqlStr)
