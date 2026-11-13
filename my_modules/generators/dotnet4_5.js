@@ -63,15 +63,20 @@ const SQL_DB_TYPE = {
     datetime: "SqlDbType.DateTime",
     date: "SqlDbType.Date",
     decimal: "SqlDbType.Decimal",
-    numeric: "SqlDbType.Decimal"
+    numeric: "SqlDbType.Decimal",
+    float: "SqlDbType.Float",
+    real: "SqlDbType.Real"
 };
+
+// float / real report their bit precision (53, 24) as FieldSize; it is not a length, so no size is passed
+const NO_SIZE_TYPES = ['float', 'real'];
 
 function genSqlParameter(field) {
     const sqlType = SQL_DB_TYPE[field.FieldType.toLowerCase()] || "SqlDbType.Variant";
     const name = field.FieldName;
 
     // ถ้ามี size เช่น nvarchar(500)
-    if (field.FieldSize && field.FieldSize > 0) {
+    if (field.FieldSize && field.FieldSize > 0 && !NO_SIZE_TYPES.includes(field.FieldType.toLowerCase())) {
         return `cmd.Parameters.Add("@${name}", ${sqlType}, ${field.FieldSize}).Value = data.${name};`;
     }
 
@@ -434,6 +439,8 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
     const keyFromReader = keys.map(k => k.read(`reader["${k.field.FieldName}"]`)).join(', ')   // the add procedure OUTPUTs the key
     const keyBind = (valueOf) => keys.map(k => genKeyParameter(k.field, valueOf(k))).join(`
                     `)
+    // the get procedure hides a soft-deleted row (DeleteWhen set), so a delete succeeded once Get finds nothing
+    const deleteConfirm = `return this.Get(${keyFromData}) == null;`
     if (!pk.has) result.warning = noPkNote(dataDescription.tbName)
 
     let paramsListService = {
@@ -534,6 +541,14 @@ function dotNet4_5_ModelService(dataDescription, nameSpace = '') {
             // decimal/numeric
             if (["decimal", "numeric", "money", "smallmoney"].includes(type)) {
                 return `${assignLeft} = ${col} == DBNull.Value ? 0 : Convert.ToDecimal(${col});`;
+            }
+
+            // float -> double, real -> float (the fallback below would assign an object to a double property)
+            if (type === "float") {
+                return `${assignLeft} = ${col} == DBNull.Value ? 0d : Convert.ToDouble(${col});`;
+            }
+            if (type === "real") {
+                return `${assignLeft} = ${col} == DBNull.Value ? 0f : Convert.ToSingle(${col});`;
             }
 
             // datetime/date/time -> (ในโค้ดคุณเก็บเป็น string) => ToString()
@@ -788,14 +803,7 @@ ${pk.has ? `        public Boolean Delete(${className}Model data)
 
                     using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        if (this.Get(${keyFromData}) != null && this.Result.DeleteWhen != null)
-                        {
-                            return true;
-                        }
-                        else
-                        {
-                            return false;
-                        }
+                        ${deleteConfirm}
                     }
                 }
             }

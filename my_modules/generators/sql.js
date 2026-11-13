@@ -146,6 +146,13 @@ GO
                 }
             }
         });
+        // soft delete: a row whose DeleteWhen is set counts as deleted. get / search hide it, and
+        // edit / delete leave it alone (so a second delete cannot overwrite who deleted it, and when)
+        const softDelete = fieldName_List.includes('DeleteWhen')
+        const activeOnly = softDelete ? ` AND
+        DeleteWhen IS NULL` : ''
+        if (softDelete) conditionSp.search.push('DeleteWhen IS NULL')
+
         spSearch += `CREATE PROCEDURE [dbo].[${dataDescription.tbName}_search]
     ${paramsSp.search.join(`,
     `
@@ -157,12 +164,12 @@ BEGIN
     SELECT
         ${fieldName_List.join(`,
         `
-        )}  
-    FROM dbo.${dataDescription.tbName}
+        )}
+    FROM dbo.${dataDescription.tbName}${conditionSp.search.length ? `
     WHERE
         ${conditionSp.search.join(` AND
         `
-        )}  
+        )}` : ''}
 END
 GO
         `
@@ -181,7 +188,7 @@ BEGIN
         )}  
     FROM dbo.${dataDescription.tbName}
     WHERE
-        ${keyWhere}
+        ${keyWhere}${activeOnly}
 END
 GO
         `
@@ -228,7 +235,7 @@ BEGIN
         ${processEdit.set.join(`,
         `
         )}
-    WHERE ${keyWhere}    
+    WHERE ${keyWhere}${activeOnly}
 END
 GO
         `
@@ -245,7 +252,7 @@ BEGIN
     SET 
         DeleteBy = @DeleteBy,
         DeleteWhen = GETDATE()
-    WHERE ${keyWhere}   
+    WHERE ${keyWhere}${activeOnly}
 END
 GO
         `
