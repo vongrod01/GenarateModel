@@ -22,7 +22,7 @@ jobs:
         run: npm ci
 
       - name: Say hello
-        run: echo "hello from GitHub Actions"
+        run: echo "hello again"
 
       - name: Look around
         run: ls -la
