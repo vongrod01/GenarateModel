@@ -21,6 +21,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Syntax check
+        run: git ls-files '*.js' | grep -v '\.min\.js$' | xargs -n1 node --check
+
       - name: Say hello
         run: echo "hello again"
 
