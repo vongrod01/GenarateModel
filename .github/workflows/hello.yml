@@ -4,7 +4,7 @@ on: push
 
 jobs:
   check:
-    name: check
+    name: test-check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,3 +21,10 @@ jobs:
 
       - name: Syntax check
         run: git ls-files '*.js' | grep -v '\.min\.js$' | xargs -n1 node --check
+
+      - name: Smoke test
+        run: |
+          node app.js > server.log 2>&1 &
+          sleep 5
+          curl -fsS -o page.html http://localhost:5506/genmodel
+          grep -q "Heart Code" page.html
