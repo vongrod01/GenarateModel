@@ -1,0 +1,72 @@
+# CI = Continuous Integration
+# ทุกครั้งที่ push โค้ด หรือเปิด Pull Request, GitHub จะเปิดเครื่อง Linux เปล่า ๆ ขึ้นมาเครื่องหนึ่ง
+# แล้วรันขั้นตอนด้านล่างตามลำดับ ถ้าขั้นไหนพัง (exit code ไม่ใช่ 0) workflow จะแดงทันที
+name: CI
+
+# เมื่อไหร่ถึงจะรัน
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # กดรันเองได้จากแท็บ Actions บน GitHub
+
+# ให้สิทธิ์แค่อ่านโค้ดพอ (หลักการให้สิทธิ์น้อยที่สุดเท่าที่จำเป็น)
+permissions:
+  contents: read
+
+# ถ้า push ซ้อนกันบน branch เดิม ให้ยกเลิกรอบเก่าที่ยังรันค้างอยู่
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Install, syntax check, smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # 1) ดึงโค้ดของ repo ลงมาที่เครื่อง runner
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # 2) ติดตั้ง Node (ใช้เวอร์ชันเดียวกับเครื่อง dev) และ cache โฟลเดอร์ npm ให้รอบถัดไปเร็วขึ้น
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # 3) ติดตั้ง dependencies ตาม package-lock.json เป๊ะ ๆ
+      #    ต่างจาก `npm install` ตรงที่ถ้า lock กับ package.json ไม่ตรงกัน มันจะ fail
+      - name: Install dependencies
+        run: npm ci
+
+      # 4) เช็ก syntax ของไฟล์ .js ทุกไฟล์ที่อยู่ใน git (ข้ามไฟล์ .min.js ของ library)
+      #    ยังไม่มี unit test ในโปรเจ็คนี้ ขั้นนี้จึงเป็นตาข่ายชั้นแรกกันโค้ดที่พิมพ์พลาดหลุดเข้า branch
+      - name: Syntax check
+        run: git ls-files '*.js' | grep -v '\.min\.js$' | xargs -n1 node --check
+
+      # 5) Smoke test: เปิดเซิร์ฟเวอร์จริงแล้วลองเรียกหน้าเว็บ ถ้า app บูตไม่ขึ้นหรือ render หน้าไม่ได้ ขั้นนี้จะแดง
+      #    ไม่ต้องใช้ฐานข้อมูล เพราะหน้า /genmodel ไม่แตะ DB จนกว่าผู้ใช้จะกด connect
+      - name: Smoke test (server boots and serves /genmodel)
+        run: |
+          node app.js > server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+
+          # รอสูงสุด 20 วินาทีให้เซิร์ฟเวอร์พร้อม
+          for i in $(seq 1 20); do
+            curl -fsS -o page.html http://localhost:5506/genmodel && break
+            sleep 1
+          done
+
+          if [ ! -s page.html ]; then
+            echo "Server did not respond. Server log:"
+            cat server.log
+            exit 1
+          fi
+
+          grep -q "Heart Code" page.html          # หน้า render ด้วย ejs ได้จริง
+          curl -fsS -o /dev/null http://localhost:5506/css/glass.css   # static file ถูก serve
