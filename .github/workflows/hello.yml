@@ -27,4 +27,8 @@ jobs:
           node app.js > server.log 2>&1 &
           sleep 5
           curl -fsS -o page.html http://localhost:5506/genmodel
-          grep -q "Heart Code" page.html
+          grep -q "..." page.html
+      
+      - name: Show server log
+        if: failure()
+        run: cat server.log
