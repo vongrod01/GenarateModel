@@ -26,7 +26,7 @@ jobs:
         run: |
           node app.js > server.log 2>&1 &
 
-          curl -fsS -o page.html http://localhost:5506/genmodel
+          curl --retry 10 --retry-delay 1 --retry-connrefused -fsS -o page.html http://localhost:5506/genmodel
           grep -q "Heart Code" page.html
       
       - name: Show server log
