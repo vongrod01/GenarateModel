@@ -29,7 +29,10 @@ jobs:
         run: |
           docker run -d --name app -p 5506:5506 genmodel:test
 
-          curl --retry 10 --retry-delay 1 --retry-connrefused -fsS -o page.html http://localhost:5506/genmodel
+          # ช่วงที่ container เพิ่งเริ่ม พอร์ตที่ map ไว้ (-p) อาจรับสายก่อนที่แอปข้างในจะพร้อม
+          # curl จึงเจอ "connection reset" (exit 56) แทนที่จะเป็น "refused" (exit 7)
+          # --retry-connrefused ไม่ครอบคลุม ต้องใช้ --retry-all-errors ให้ลองซ้ำกับ error ทุกชนิด
+          curl --retry 10 --retry-delay 1 --retry-all-errors -fsS -o page.html http://localhost:5506/genmodel
           grep -q "Heart Code" page.html
 
       - name: Show container log
