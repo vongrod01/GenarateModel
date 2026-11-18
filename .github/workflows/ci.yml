@@ -1,39 +1,94 @@
+# ===================================================================
+# CI = ตรวจโค้ดอัตโนมัติ: GitHub เปิดเครื่อง Linux เปล่า ๆ ให้ 1 เครื่องทุกครั้งที่ถูกเรียก
+# แล้วรันขั้นตอนข้างล่างตามลำดับ ขั้นไหนพัง (exit code ไม่ใช่ 0) ทั้ง job จะแดง
+# และขั้นที่เหลือจะถูกข้าม (ยกเว้นขั้นที่ตั้ง if: failure() ไว้)
+# ===================================================================
+
+# ชื่อของ workflow (ชื่อ run ในแท็บ Actions)
+# หมายเหตุ: ในรายการ workflow ฝั่งซ้าย ชื่ออาจขึ้นเป็นชื่อเก่าอยู่ ถ้าไฟล์นี้ยังไม่อยู่บน default branch (main)
 name: CI
 
+# ---------------- เมื่อไหร่ถึงจะรัน ----------------
 on:
+  # push: มี commit ใหม่ขึ้นไปบน branch ที่ระบุ
+  # branches ตรงนี้ = branch ที่ "ถูก push" (push ไป branch อื่น เช่น cd/docker จะไม่รัน CI)
   push:
     branches: [main, dev]
+
+  # pull_request: เกิดตอน "เปิด PR", ตอน push commit เพิ่มเข้า branch ของ PR ที่เปิดค้างอยู่, และตอน Reopen
+  # branches ตรงนี้ = branch "ปลายทาง" ที่ PR ขอรวมเข้า (ไม่ใช่ branch ที่ push)
+  # ดังนั้น PR เข้า main รัน แต่ PR เข้า dev ไม่รัน
+  # (กด Merge ไม่ทำให้ pull_request รันซ้ำ แต่จะเกิด push บน main ซึ่งอยู่ด้านบน)
   pull_request:
     branches: [main]
 
+# ---------------- งานที่ต้องทำ ----------------
 jobs:
+  # "check" คือ id ของ job (ใช้อ้างอิงในไฟล์), ส่วน name ด้านล่างคือชื่อที่โชว์บนหน้า PR/Actions
   check:
     name: test-check
+
+    # เครื่องที่ใช้รัน: Ubuntu ใหม่เอี่ยมทุกรอบ (ไม่เหลืออะไรจากรอบก่อน)
+    # ของที่ต้องการข้ามรอบ ต้องเก็บใน cache เท่านั้น
     runs-on: ubuntu-latest
+
+    # เวลารันสูงสุด (นาที) ถ้าเกินจะถูกยกเลิกเป็น failed
+    # ค่าเริ่มต้นคือ 360 นาที เลยตั้งให้สั้นลงกันค้างเปลืองเวลา
     timeout-minutes: 5
+
     steps:
+      # 1) ดึงโค้ดของ repo ลงมาที่เครื่อง runner (เครื่องเปล่าไม่มีโค้ด ต้องดึงก่อนทุกครั้ง)
       - name: Checkout
         uses: actions/checkout@v7
 
+      # 2) ติดตั้ง Node 22 (ให้ตรงกับ DockerFile)
+      #    cache: npm = เก็บโฟลเดอร์ ~/.npm ไว้ใช้รอบหน้าให้เร็วขึ้น
+      #    key ของ cache = hash ของ package-lock.json (lock เปลี่ยน = cache ใหม่)
+      #    cache แยกตาม branch: branch ใหม่รอบแรกจะ miss ("npm cache is not found") แล้วบันทึกใหม่ตอนท้าย
+      #    (ตัว Node เองมาจากเครื่อง runner ไม่เกี่ยวกับ cache นี้)
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
 
+      # 3) ติดตั้ง dependencies ตาม package-lock.json เป๊ะ ๆ
+      #    ต่างจาก npm install ตรงที่ถ้า lock กับ package.json ไม่ตรงกัน จะ fail ทันที (ไม่แก้ lock ให้เอง)
       - name: Install dependencies
         run: npm ci
 
+      # 4) เช็ก syntax ของไฟล์ .js ทุกไฟล์ที่ git ติดตามอยู่ (ยังไม่มี unit test ขั้นนี้เป็นตาข่ายชั้นแรก)
+      #    git ls-files '*.js'   = รายชื่อไฟล์ .js ที่อยู่ใน git (node_modules ไม่ถูก track เลยไม่ถูกเช็ก)
+      #    grep -v '\.min\.js$'  = ตัดไฟล์ .min.js ของ library ออก
+      #    xargs -n1 node --check = รัน node --check ทีละไฟล์ (เช็กอย่างเดียว ไม่รันโค้ด)
+      #    ถ้าไฟล์ไหนพัง xargs จะ exit 123 และ step นี้แดง
       - name: Syntax check
         run: git ls-files '*.js' | grep -v '\.min\.js$' | xargs -n1 node --check
 
+      # 5) Smoke test: เปิดเซิร์ฟเวอร์จริงแล้วลองเรียกหน้าเว็บ ถ้า app บูตไม่ขึ้นหรือหน้าไม่ขึ้น จะแดง
+      #    ไม่ต้องใช้ฐานข้อมูล เพราะหน้า /genmodel ไม่แตะ DB จนกว่าผู้ใช้จะกด connect
+      #    shell ของ runner รันแบบ bash -e = คำสั่งไหนจบด้วย exit ไม่ใช่ 0 จะหยุดทั้ง step ทันที
       - name: Smoke test
         run: |
+          # & ท้ายบรรทัด = รันเบื้องหลัง (ไม่งั้นเซิร์ฟเวอร์จะค้าง step นี้ตลอดไป)
+          # > server.log 2>&1 = เก็บทั้งข้อความปกติและ error ลงไฟล์ server.log (ใช้ดูตอนพัง)
           node app.js > server.log 2>&1 &
 
+          # รอเซิร์ฟเวอร์ลุกแทนการ sleep แบบตายตัว:
+          #   --retry 10 --retry-delay 1 --retry-connrefused  = ลองซ้ำสูงสุด 10 ครั้ง ห่างกัน 1 วินาที
+          #                                                      และนับ "เชื่อมต่อไม่ได้ (exit 7)" ว่าลองซ้ำได้ด้วย
+          #   -f = ถ้าเซิร์ฟเวอร์ตอบ HTTP 4xx/5xx ให้ถือว่าพัง (exit 22) ไม่งั้น 404 จะเขียวทั้งที่หน้าไม่ขึ้น
+          #   -s = ซ่อนแถบ progress,  -S = แต่ยังโชว์ข้อความ error (ใช้คู่กัน -sS)
+          #   -o page.html = เซฟหน้าที่ได้ลงไฟล์ เพื่อเอาไปตรวจเนื้อหาในบรรทัดถัดไป
           curl --retry 10 --retry-delay 1 --retry-connrefused -fsS -o page.html http://localhost:5506/genmodel
+
+          # grep -q = หาข้อความโดยไม่พิมพ์อะไร ผลอยู่ที่ exit code: เจอ = 0 (ผ่าน), ไม่เจอ = 1 (แดง)
+          # ข้อความใน "..." คือ regex ไม่ใช่ข้อความตรง ๆ (ระวังอักขระพิเศษ เช่น . * ที่จับได้กว้าง)
           grep -q "Heart Code" page.html
-      
+
+      # 6) แสดง log ของเซิร์ฟเวอร์ "เฉพาะตอนมีขั้นก่อนหน้าพัง" ไว้ช่วยหาสาเหตุ
+      #    ปกติถ้าขั้นก่อนหน้าพัง ขั้นที่เหลือจะถูกข้าม if: failure() บอกให้ขั้นนี้รันอยู่ดี
+      #    ตอน CI เขียวทั้งหมด ขั้นนี้จะขึ้นว่า skipped (ถูกต้องแล้ว ไม่ใช่บั๊ก)
       - name: Show server log
         if: failure()
         run: cat server.log
