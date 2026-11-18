@@ -1,0 +1,297 @@
+let downloadFilesList = []
+function downloadFile(fileName, content) {
+    return new Promise((resolve, reject) => {
+        try {
+            const link = document.createElement("a");
+            const file = new Blob([content], { type: 'text/plain' });
+            link.href = URL.createObjectURL(file);
+            link.download = fileName;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            resolve(`download ${fileName} successfuly`)
+        } catch (error) {
+            reject(error)
+        }
+
+    })
+};
+
+
+document.getElementById('btnExportBaseClass').onclick = function () {
+    reqAndRes('/contentBase', 'POST', {
+        programming: document.getElementById('selProgramming').value,
+        provider: objConnectDesciption.connectionDB.provider,
+        nameSpace: document.getElementById('edtNameSpace').value
+    },
+        async (dataRes) => {
+            if (Array.isArray(dataRes.content)) {
+                for (let i = 0; i < dataRes.content.length; i++) {
+                    await downloadFile(dataRes.fileName[i], dataRes.content[i])
+                }
+            } else {
+                await downloadFile(dataRes.fileName, dataRes.content)
+            }
+        }
+    )
+}
+
+document.getElementById('btnExportModelService').onclick = async function () {
+
+    document.querySelectorAll('#tbTableList * td input[type=checkbox]:checked').forEach(elChk => {
+        let tbName = elChk.value
+        let databaseName = document.querySelector('#tbDatabaseList tbody tr.selected td').innerHTML
+        let connDetail = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
+        connDetail.databaseName = databaseName
+        connDetail.tbName = tbName
+        connDetail.programming = document.getElementById('selProgramming').value
+        connDetail.nameSpace = document.getElementById('edtNameSpace').value
+        exportModelService(connDetail)
+            .then((data) => {
+                // console.log(data)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        // console.log(elChk.value)
+    });
+}
+document.getElementById('btnExportDBService').onclick = async function () {
+    reqAndRes('/contentDBService', 'POST', {
+        programming: document.getElementById('selProgramming').value,
+        provider: objConnectDesciption.connectionDB.provider,
+        nameSpace: document.getElementById('edtNameSpace').value
+    },
+        async (dataRes) => {
+            if (Array.isArray(dataRes.content)) {
+                for (let i = 0; i < dataRes.content.length; i++) {
+                    await downloadFile(dataRes.fileName[i], dataRes.content[i])
+                }
+            } else {
+                await downloadFile(dataRes.fileName, dataRes.content)
+            }
+        }
+    )
+
+}
+
+document.getElementById('btnExportControl').onclick = async function () {
+
+    document.querySelectorAll('#tbTableList * td input[type=checkbox]:checked').forEach(elChk => {
+        let tbName = elChk.value
+        let databaseName = document.querySelector('#tbDatabaseList tbody tr.selected td').innerHTML
+        let connDetail = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
+        connDetail.databaseName = databaseName
+        connDetail.tbName = tbName
+        connDetail.programming = document.getElementById('selProgramming').value
+        connDetail.nameSpace = document.getElementById('edtNameSpace').value
+        exportController(connDetail)
+            .then((data) => {
+                // console.log(data)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        // console.log(elChk.value)
+    });
+}
+
+document.getElementById('btnExportStoreProce').onclick = async function () {
+
+    document.querySelectorAll('#tbTableList * td input[type=checkbox]:checked').forEach(elChk => {
+        let tbName = elChk.value
+        let databaseName = document.querySelector('#tbDatabaseList tbody tr.selected td').innerHTML
+        let connDetail = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
+        connDetail.databaseName = databaseName
+        connDetail.tbName = tbName
+        connDetail.programming = document.getElementById('selProgramming').value
+        exportStoreProcedure(connDetail)
+            .then((data) => {
+                // console.log(data)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        // console.log(elChk.value)
+    });
+}
+document.getElementById('btnExportIndexTable').onclick = async function () {
+
+    document.querySelectorAll('#tbTableList * td input[type=checkbox]:checked').forEach(elChk => {
+        let tbName = elChk.value
+        let databaseName = document.querySelector('#tbDatabaseList tbody tr.selected td').innerHTML
+        let connDetail = JSON.parse(JSON.stringify(objConnectDesciption.connectionDB))
+        connDetail.databaseName = databaseName
+        connDetail.tbName = tbName
+        connDetail.programming = document.getElementById('selProgramming').value
+        exportIndexTable(connDetail)
+            .then((data) => {
+                // console.log(data)
+            })
+            .catch((err) => {
+                console.log(err)
+            })
+        // console.log(elChk.value)
+    });
+}
+
+
+// a generator may attach a warning, e.g. the table has no primary key so get / edit / delete were skipped
+function notifyWarning(dataRes) {
+    if (dataRes && dataRes.warning && typeof window.heartToast === 'function') window.heartToast(dataRes.warning)
+}
+
+async function exportModelService(connDetail) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            console.log("exportModelService : ", { connDetail })
+            await reqAndRes('/contentModelService', 'POST', connDetail, async (dataRes) => {
+                notifyWarning(dataRes)
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
+                        for (let i = 0; i < dataRes.content.length; i++) {
+
+                            // downloadFilesList.push(dataRes)
+
+                            await downloadFile(dataRes.fileName[i], dataRes.content[i])
+
+                        }
+                        resolve(`export ${dataRes.fileName[0]} succesfuly!`)
+                    } else {
+
+
+                        downloadFilesList.push(dataRes)
+
+                        await downloadFile(dataRes.fileName, dataRes.content)
+
+                        resolve(`export ${dataRes.fileName} succesfuly!`)
+                    }
+                }
+                else {
+                    resolve(`not export!`)
+                }
+            })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
+async function exportController(connDetail) {
+    return new Promise(async (resolve, reject) => {
+        try {
+
+            await reqAndRes('/contentController', 'POST', connDetail, async (dataRes) => {
+                notifyWarning(dataRes)
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
+                        for (let i = 0; i < dataRes.content.length; i++) {
+
+                            // downloadFilesList.push(dataRes)
+
+                            await downloadFile(dataRes.fileName[i], dataRes.content[i])
+
+                        }
+                        resolve(`export ${dataRes.fileName[0]} succesfuly!`)
+                    } else {
+
+
+                        downloadFilesList.push(dataRes)
+
+                        await downloadFile(dataRes.fileName, dataRes.content)
+
+                        resolve(`export ${dataRes.fileName} succesfuly!`)
+                    }
+                }
+                else {
+                    resolve(`not export!`)
+                }
+            })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
+async function exportStoreProcedure(connDetail) {
+    return new Promise(async (resolve, reject) => {
+        try {
+
+            await reqAndRes('/contentStoreProcedure', 'POST', connDetail, async (dataRes) => {
+                notifyWarning(dataRes)
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
+                        for (let i = 0; i < dataRes.content.length; i++) {
+
+                            // downloadFilesList.push(dataRes)
+
+                            await downloadFile(dataRes.fileName[i], dataRes.content[i])
+
+                        }
+                        resolve(`export ${dataRes.fileName[0]} succesfuly!`)
+                    } else {
+
+
+                        downloadFilesList.push(dataRes)
+
+                        await downloadFile(dataRes.fileName, dataRes.content)
+
+                        resolve(`export ${dataRes.fileName} succesfuly!`)
+                    }
+                }
+                else {
+                    resolve(`not export!`)
+                }
+            })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
+async function exportIndexTable(connDetail) {
+    return new Promise(async (resolve, reject) => {
+        try {
+
+            await reqAndRes('/contentIndexTable', 'POST', connDetail, async (dataRes) => {
+                if (dataRes.export) {
+                    if (Array.isArray(dataRes.content)) {
+                        for (let i = 0; i < dataRes.content.length; i++) {
+
+                            // downloadFilesList.push(dataRes)
+
+                            await downloadFile(dataRes.fileName[i], dataRes.content[i])
+
+                        }
+                        resolve(`export ${dataRes.fileName[0]} succesfuly!`)
+                    } else {
+
+
+                        downloadFilesList.push(dataRes)
+
+                        await downloadFile(dataRes.fileName, dataRes.content)
+
+                        resolve(`export ${dataRes.fileName} succesfuly!`)
+                    }
+                }
+                else {
+                    resolve(`not export!`)
+                }
+            })
+        } catch (error) {
+            reject(error)
+        }
+    })
+}
+
+document.getElementById('chkSelectAll').onchange = function () {
+    if (document.getElementById('chkSelectAll').checked) {
+        document.querySelectorAll('#tbTableList * input[type=checkbox]').forEach(element => {
+            element.checked = true
+        });
+    }
+    else {
+        document.querySelectorAll('#tbTableList * input[type=checkbox]').forEach(element => {
+            element.checked = false
+        });
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "server":{
+        "port":5506,
+        "host":"localhost"
+    },
+    "description":{
+        "titleHeader":"Heart Code",
+        "version":"1.7.0",
+        "developer":"Adisorn Vongrod"
+    }
+
+}

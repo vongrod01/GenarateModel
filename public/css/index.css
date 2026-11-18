@@ -1,0 +1,161 @@
+:root {
+  --h-header: 60px;
+  --h-footer: 40px;
+  --h-select: 100px;
+  --h-export: 100px;
+  --h-content: calc(100vh - var(--h-header) - var(--h-footer) - var(--h-select) - var(--h-export) - 32px);
+
+  --theme-color: transparent;
+  --theme-font-color: #ffffff;
+
+}
+
+body{
+  background-image: url(../img/bg.jpg);
+  background-size: cover;    /* ครอบคลุมพื้นที่ทั้งหมดของหน้าจอ */
+  background-position: center; /* จัดตำแหน่งให้อยู่ตรงกลาง */
+  background-repeat: no-repeat; /* ไม่ทำให้ภาพซ้ำ */
+}
+#pnlSelect {
+  height: var(--h-select);
+  /* backdrop-filter: blur(5px); */
+}
+
+#pnlExport {
+  height: var(--h-export);
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap : 5px;
+  .my-btn,.input-group{
+    height: 49% !important;
+  }
+  .input-group{
+    *{
+      height: 100% !important;
+    }
+  }
+}
+
+#pnlContent {
+  height: var(--h-content);
+  /* backdrop-filter: blur(5px); */
+  /* background-color: bisque; */
+  /* background-image: url(../img/bg.jpg); */
+}
+
+header {
+  height: var(--h-header);
+  /* background-color: var(--theme-color); */
+  /* backdrop-filter: blur(5px); */
+  display: flex;
+  justify-content: center;
+}
+
+header span {
+  align-self: center;
+  /* color: #fff; */
+  -webkit-text-stroke: 0.5px #fff;
+  color:transparent; 
+  /* text-shadow:-1px -1px 0 #fff,-1px 1px 0 #fff,1px -1px 0 #fff,1px 1px 0 #fff; */
+  font-weight: 1000;
+  font-size: 40px;
+  text-align: center;
+  word-spacing: 20px
+}
+footer {
+  /* backdrop-filter: blur(5px); */
+  height: var(--h-footer);
+  /* background-color: var(--theme-color); */
+  display: flex;
+  justify-content: end;
+}
+
+footer span {
+  align-self: center;
+  background-color: rgba(0,0,0,0.6);
+  color: #fff;
+  /* -webkit-text-stroke: 0.5px #000; */
+  font-weight: 400;
+  font-size: small;
+  text-align: center;
+}
+
+table {
+
+  border-collapse: separate;
+  border-spacing: 0 !important;
+  margin-top: 0 !important;
+}
+
+
+
+.tb-content {
+  height: calc(var(--h-content) - 15px);
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  overflow: auto;
+  
+}
+
+.tb-content tbody tr td{
+  backdrop-filter: blur(3px);
+  background: transparent !important;
+  color: #fff !important;
+}
+.tb-content tbody{
+  z-index: 0 !important;
+}
+.tb-content thead{
+  z-index: 1 !important;
+}
+
+
+tbody tr.selected td {
+  background-color: #fff !important;
+  color: #000 !important;
+  font-weight: bold;
+}
+
+
+
+
+:is(#pnlSelect, #pnlExport) *.input-group-text.span-layout {
+  background-color: var(--theme-color) !important;
+  color: var(--theme-font-color) !important;
+  border: 1px solid var(--theme-font-color) !important;
+  display: flex;
+  justify-content: end;
+  font-weight: bold;
+}
+
+:is(#pnlSelect, #pnlExport) *:where(.form-select, .form-control) {
+  background-color: var(--theme-font-color) !important;
+  /* color: var(--theme-color) !important; */
+  border: 1px solid var(--theme-font-color) !important;
+
+}
+
+
+:is(#pnlSelect, #pnlExport) *:where(input[type=text], select, select option) {
+  background-color: #fff;
+  /* color: var(--theme-color); */
+}
+
+
+#tbDatabaseList thead tr th{
+  color: #fff;
+  background-color: var(--bs-dark);
+}
+#tbTableList thead tr th{
+  color: #fff;
+  background-color: var(--bs-dark);
+}
+#tbTableDesciption thead tr th{
+  color: #fff;
+  background-color: var(--bs-dark);
+}
+
+
+
+

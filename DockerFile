@@ -1,0 +1,20 @@
+FROM node:22-alpine
+WORKDIR /app
+
+# copy only the package files first so this layer is cached until dependencies change
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+COPY . .
+EXPOSE 5506
+CMD ["node", "app.js"]
+
+
+# FROM node:boron
+# RUN mkdir -p /usr/src/app
+# WORKDIR /usr/src/app
+# COPY package.json /usr/src/app/
+# RUN npm install
+# COPY . /usr/src/app
+# EXPOSE 3000
+# CMD ["npm","start"]

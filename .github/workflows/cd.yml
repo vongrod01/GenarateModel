@@ -1,0 +1,59 @@
+name: CD
+
+# PR เข้า main/dev  -> build + ทดสอบ image เท่านั้น (ยังไม่ push)
+# push เข้า main    -> build + ทดสอบ แล้ว push image ขึ้น GHCR
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, dev]
+
+jobs:
+  image:
+    name: build-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # GITHUB_TOKEN ของ job นี้ต้องมีสิทธิ์เขียน package (GHCR) ถึงจะ push image ได้
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # ไฟล์ชื่อ DockerFile (F ใหญ่) แต่ runner เป็น Linux แยกตัวพิมพ์ ต้องระบุ -f เอง
+      - name: Build image
+        run: docker build -f DockerFile -t genmodel:test .
+
+      - name: Smoke test container
+        run: |
+          docker run -d --name app -p 5506:5506 genmodel:test
+
+          # ช่วงที่ container เพิ่งเริ่ม พอร์ตที่ map ไว้ (-p) อาจรับสายก่อนที่แอปข้างในจะพร้อม
+          # curl จึงเจอ "connection reset" (exit 56) แทนที่จะเป็น "refused" (exit 7)
+          # --retry-connrefused ไม่ครอบคลุม ต้องใช้ --retry-all-errors ให้ลองซ้ำกับ error ทุกชนิด
+          curl --retry 10 --retry-delay 1 --retry-all-errors -fsS -o page.html http://localhost:5506/genmodel
+          grep -q "Heart Code" page.html
+
+      - name: Show container log
+        if: failure()
+        run: docker logs app
+
+      # สองขั้นล่างทำเฉพาะตอน push (ไม่ทำตอนเป็น PR)
+      - name: Log in to GHCR
+        if: github.event_name == 'push'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+
+      - name: Push image
+        if: github.event_name == 'push'
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          # GHCR บังคับชื่อ image เป็นตัวพิมพ์เล็กทั้งหมด (GenarateModel -> genaratemodel)
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker tag genmodel:test "$IMAGE:latest"
+          docker tag genmodel:test "$IMAGE:$SHA"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:$SHA"
