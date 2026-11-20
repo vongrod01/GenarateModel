@@ -1,12 +1,12 @@
-const fs = require("fs")
-const path = require("path")
+// require() of a .json works in Node and is inlined by bundlers (the Cloudflare Worker has no fs)
+const systemConfig = require('../../SystemConfig.json')
 
-let systemConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'SystemConfig.json'), 'utf-8'))
-
-function header() {
-    let dt = new Date();
+// `now` is injectable for tests. The stamp is always Asia/Bangkok time (UTC+7, no DST), computed
+// from UTC so it is the same on a Bangkok laptop and on a Cloudflare Worker (which runs in UTC).
+function header(now = new Date()) {
+    let dt = new Date(now.getTime() + 7 * 60 * 60 * 1000);
     const month = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    dformat = `${dt.getDate()}-${month[dt.getMonth()]}-${dt.getFullYear()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+    const dformat = `${dt.getUTCDate()}-${month[dt.getUTCMonth()]}-${dt.getUTCFullYear()} ${dt.getUTCHours()}:${dt.getUTCMinutes()}:${dt.getUTCSeconds()}`
 
     // let genDateStr = `Generate Date : ${dformat}`
     // let headerStr = `Generate By Genarate MVC : Ver ${systemConfig.description.version} (Developed by ${systemConfig.description.developer}) | ${genDateStr}`
@@ -34,14 +34,6 @@ function header() {
     // }
 
     // return frame
-
-    const now = new Date();
-
-    const pad = (n) => n.toString().padStart(2, '0');
-
-    const formattedDate =
-        `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
-        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 
     const lines = [
         "===============================================================================",
