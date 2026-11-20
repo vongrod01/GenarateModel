@@ -66,7 +66,7 @@ jobs:
         run: git ls-files '*.js' | grep -v '\.min\.js$' | xargs -n1 node --check
 
       # 5) Smoke test: เปิดเซิร์ฟเวอร์จริงแล้วลองเรียกหน้าเว็บ ถ้า app บูตไม่ขึ้นหรือหน้าไม่ขึ้น จะแดง
-      #    ไม่ต้องใช้ฐานข้อมูล เพราะหน้า /genmodel ไม่แตะ DB จนกว่าผู้ใช้จะกด connect
+      #    ไม่ต้องใช้ฐานข้อมูล เพราะหน้า /gencode ไม่แตะ DB จนกว่าผู้ใช้จะกด connect
       #    shell ของ runner รันแบบ bash -e = คำสั่งไหนจบด้วย exit ไม่ใช่ 0 จะหยุดทั้ง step ทันที
       - name: Smoke test
         run: |
@@ -80,7 +80,7 @@ jobs:
           #   -f = ถ้าเซิร์ฟเวอร์ตอบ HTTP 4xx/5xx ให้ถือว่าพัง (exit 22) ไม่งั้น 404 จะเขียวทั้งที่หน้าไม่ขึ้น
           #   -s = ซ่อนแถบ progress,  -S = แต่ยังโชว์ข้อความ error (ใช้คู่กัน -sS)
           #   -o page.html = เซฟหน้าที่ได้ลงไฟล์ เพื่อเอาไปตรวจเนื้อหาในบรรทัดถัดไป
-          curl --retry 10 --retry-delay 1 --retry-connrefused -fsS -o page.html http://localhost:5506/genmodel
+          curl --retry 10 --retry-delay 1 --retry-connrefused -fsS -o page.html http://localhost:5506/gencode
 
           # grep -q = หาข้อความโดยไม่พิมพ์อะไร ผลอยู่ที่ exit code: เจอ = 0 (ผ่าน), ไม่เจอ = 1 (แดง)
           # ข้อความใน "..." คือ regex ไม่ใช่ข้อความตรง ๆ (ระวังอักขระพิเศษ เช่น . * ที่จับได้กว้าง)
