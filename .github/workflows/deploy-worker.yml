@@ -2,7 +2,7 @@
 # Deploy Worker = เอาหน้าเว็บ (โฟลเดอร์ worker/) ขึ้น Cloudflare Workers ที่ https://codegenerator.vongrod.com/gencode
 #   PR เข้า main/dev  -> build + ทดสอบเท่านั้น (ไม่ deploy, ไม่แตะ secret)
 #   push เข้า main    -> build + ทดสอบ แล้ว deploy ขึ้น Cloudflare แล้วลองเรียกเว็บจริงอีกรอบ
-# (คนละไฟล์กับ cd.yml ซึ่งทำ Docker image ขึ้น GHCR)
+# นี่คือ CD ตัวเดียวของโปรเจ็คนี้ (เลิกทำ Docker image ขึ้น GHCR แล้ว ถ้าจะกลับมาใช้ Docker ค่อยสั่งใหม่)
 # ===================================================================
 
 name: Deploy Worker
