@@ -1,0 +1,120 @@
+# ===================================================================
+# Deploy Worker = เอาหน้าเว็บ (โฟลเดอร์ worker/) ขึ้น Cloudflare Workers ที่ https://codegenerator.vongrod.com/gencode
+#   PR เข้า main/dev  -> build + ทดสอบเท่านั้น (ไม่ deploy, ไม่แตะ secret)
+#   push เข้า main    -> build + ทดสอบ แล้ว deploy ขึ้น Cloudflare แล้วลองเรียกเว็บจริงอีกรอบ
+# (คนละไฟล์กับ cd.yml ซึ่งทำ Docker image ขึ้น GHCR)
+# ===================================================================
+
+name: Deploy Worker
+
+# ---------------- เมื่อไหร่ถึงจะรัน ----------------
+# paths = รันเฉพาะตอนมีการแก้ไฟล์ที่กระทบ Worker (แก้ README ฯลฯ จะไม่รัน)
+# หมายเหตุ: ถ้า PR/push มีทั้งไฟล์ในรายการและนอกรายการ จะรัน (ขอแค่มีไฟล์ในรายการอย่างน้อย 1 ไฟล์)
+on:
+  pull_request:
+    branches: [main, dev]
+    paths:
+      - 'worker/**'
+      - 'my_modules/generators/**'
+      - 'my_modules/be_export_file.js'
+      - 'views/**'
+      - 'public/**'
+      - 'SystemConfig.json'
+      - '.github/workflows/deploy-worker.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'worker/**'
+      - 'my_modules/generators/**'
+      - 'my_modules/be_export_file.js'
+      - 'views/**'
+      - 'public/**'
+      - 'SystemConfig.json'
+      - '.github/workflows/deploy-worker.yml'
+
+# สิทธิ์ของ GITHUB_TOKEN: อ่าน repo อย่างเดียวพอ (ไม่ได้ push อะไรขึ้น GitHub)
+# การ deploy ขึ้น Cloudflare ใช้ token ของ Cloudflare ต่างหาก (secrets ด้านล่าง)
+permissions:
+  contents: read
+
+jobs:
+  worker:
+    name: build-and-deploy-worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    # ทุกคำสั่ง run: ในไฟล์นี้ทำงานในโฟลเดอร์ worker/ (Worker เป็นโปรเจ็คแยกที่มี package.json ของตัวเอง)
+    defaults:
+      run:
+        working-directory: worker
+
+    # กัน deploy ซ้อนกัน: push เข้า main หลายรอบติดกันจะ "เข้าคิว" ทีละรอบ (ไม่ยกเลิกรอบที่กำลัง deploy)
+    # ส่วน PR ให้กลุ่มไม่ซ้ำกันเลย (ใช้ run_id) เพื่อไม่ให้ไปบล็อกหรือถูกยกเลิกโดย deploy
+    concurrency:
+      group: ${{ github.event_name == 'push' && 'deploy-worker' || format('deploy-worker-pr-{0}', github.run_id) }}
+      cancel-in-progress: false
+
+    env:
+      # ปิดการส่งสถิติการใช้งานของ cf CLI
+      CF_SEND_TELEMETRY: "false"
+
+    steps:
+      # 1) ดึงโค้ดของ repo ลงมาที่เครื่อง runner
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # 2) ติดตั้ง Node 22 (ได้เวอร์ชัน 22 ล่าสุด) ซึ่งต้อง >= 22.18 ตามที่ cf ต้องการ
+      #    cache ใช้ worker/package-lock.json เป็นกุญแจ (ไม่ใช่ lock ของแอปเดิมที่ root)
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: worker/package-lock.json
+
+      # 3) ติดตั้ง dependencies ตาม lock เป๊ะ ๆ (ถ้า lock กับ package.json ไม่ตรงกัน จะ fail ทันที)
+      - name: Install dependencies
+        run: npm ci
+
+      # 4) เทสต์ (node --test): routes, SQL, generators, หน้าเว็บ static ฯลฯ ไม่ต่อเน็ตและไม่ต่อ DB
+      - name: Test
+        run: npm test
+
+      # 5) build: สร้างหน้าเว็บ static (gencode.html + css/js) แล้ว cf build ผลลัพธ์อยู่ที่ .cloudflare/output/v1/
+      - name: Build
+        run: npm run build
+
+      # 6) Smoke test กับ build ที่เพิ่งทำ: รัน Worker จริงบน workerd (runtime เดียวกับ Cloudflare) ที่ localhost:4173
+      #    smoke.mjs เช็กหน้าเว็บ, redirect, path เก่า /genmodel ต้อง 404, ไฟล์ static และ API ที่เรียกใช้ไดรเวอร์ DB
+      #    --retry 15 --delay 2 = ลองซ้ำสูงสุด 15 รอบ ห่าง 2 วินาที รอให้เซิร์ฟเวอร์ลุก (แทนการ sleep ตายตัว)
+      #    & ท้ายบรรทัด = รัน preview เบื้องหลัง ไม่งั้นจะค้างขั้นนี้ตลอดไป
+      - name: Smoke test (preview)
+        run: |
+          npm run preview > preview.log 2>&1 &
+          node scripts/smoke.mjs http://localhost:4173 --retry 15 --delay 2
+
+      - name: Show preview log
+        if: failure()
+        run: cat preview.log
+
+      # 7) ซ้อม deploy: ตรวจ build + config ว่าพร้อมขึ้น Cloudflare ได้ โดยไม่ส่งอะไรออกไปเลย (ไม่ต้องมี token)
+      #    --prebuilt = ใช้ผล build ขั้น 5 ไม่ build ซ้ำ
+      - name: Dry run deploy
+        run: npx cf deploy --prebuilt --dry-run
+
+      # ---- สองขั้นล่างทำเฉพาะตอน push เข้า main (ไม่ทำตอนเป็น PR) ----
+
+      # 8) deploy จริง ขั้นนี้เป็นขั้นเดียวที่ได้รับ secret (token สิทธิ์น้อย ตั้งไว้ใน Settings > Secrets > Actions)
+      #    PR จากที่อื่นจึงไม่มีทางเห็น token นี้
+      #    ผลที่ตามมา: Cloudflare สร้าง DNS record + ใบรับรอง HTTPS ของ codegenerator.vongrod.com ให้เอง (custom domain)
+      - name: Deploy to Cloudflare
+        if: github.event_name == 'push'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx cf deploy --prebuilt
+
+      # 9) ลองเรียกเว็บจริงหลัง deploy: โดเมนใหม่อาจใช้เวลาสักครู่กว่า DNS/ใบรับรองจะพร้อม จึงลองซ้ำได้ถึง 30 รอบ ห่าง 5 วินาที
+      - name: Smoke test (live)
+        if: github.event_name == 'push'
+        run: node scripts/smoke.mjs https://codegenerator.vongrod.com --retry 30 --delay 5
