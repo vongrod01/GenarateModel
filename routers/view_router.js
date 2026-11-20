@@ -5,7 +5,7 @@ const fs = require("fs")
 
 let systemConfig = JSON.parse(fs.readFileSync('SystemConfig.json', 'utf-8'))
 
-router.get('/genmodel', (req, res) => {
+router.get('/gencode', (req, res) => {
     res.render('index.ejs', systemConfig.description)
 })
 
