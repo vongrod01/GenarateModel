@@ -11,6 +11,8 @@
     "build:static": "node scripts/build-static.mjs",
     "build": "npm run build:static && cf build",
     "preview": "vite preview --port 4173",
+    "smoke": "node scripts/smoke.mjs",
+    "parity": "node scripts/parity.mjs",
     "test": "node --test"
   },
   "dependencies": {
