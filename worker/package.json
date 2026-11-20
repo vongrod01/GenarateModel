@@ -8,7 +8,8 @@
     "node": ">=22.18"
   },
   "scripts": {
-    "build": "cf build",
+    "build:static": "node scripts/build-static.mjs",
+    "build": "npm run build:static && cf build",
     "preview": "vite preview --port 4173",
     "test": "node --test"
   },
