@@ -3,26 +3,51 @@
 #   PR เข้า main/dev  -> build + ทดสอบเท่านั้น (ไม่ deploy, ไม่แตะ secret)
 #   push เข้า main    -> build + ทดสอบ แล้ว deploy ขึ้น Cloudflare แล้วลองเรียกเว็บจริงอีกรอบ
 # นี่คือ CD ตัวเดียวของโปรเจ็คนี้ (เลิกทำ Docker image ขึ้น GHCR แล้ว ถ้าจะกลับมาใช้ Docker ค่อยสั่งใหม่)
+#
+# ---- ตอนคัดลอกไฟล์นี้ไปใช้กับโปรเจ็คอื่น ให้แก้ตรงนี้ (ค่าเฉพาะของโปรเจ็คนี้) ----
+#   [ ] name: ที่บรรทัดบนสุด และ name: ของ job (ชื่อที่โผล่ใน Actions / checks ของ PR)
+#   [ ] on: -> branches (PR ปลายทางไหน, push branch ไหน) และรายการ paths ทั้งสองที่ให้ตรงกัน
+#   [ ] defaults.run.working-directory (โฟลเดอร์ที่มี package.json)
+#   [ ] setup-node: node-version และ cache-dependency-path (ที่อยู่ของ package-lock.json)
+#   [ ] คำสั่ง npm test / npm run build / npm run preview และพอร์ต preview (4173)
+#   [ ] scripts/smoke.mjs และ URL เว็บจริงใน step "Smoke test (live)"
+#   [ ] ชื่อ secret (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID) ต้องไปสร้างใน
+#       GitHub repo > Settings > Secrets and variables > Actions ของโปรเจ็คนั้นด้วย
+#   [ ] concurrency group ชื่อ 'deploy-worker' (ถ้ามี workflow deploy หลายตัวในที่เดียวกัน อย่าให้ชื่อซ้ำ)
+#   [ ] timeout-minutes
 # ===================================================================
 
 name: Deploy Worker
 
 # ---------------- เมื่อไหร่ถึงจะรัน ----------------
-# paths = รันเฉพาะตอนมีการแก้ไฟล์ที่กระทบ Worker (แก้ README ฯลฯ จะไม่รัน)
-# หมายเหตุ: ถ้า PR/push มีทั้งไฟล์ในรายการและนอกรายการ จะรัน (ขอแค่มีไฟล์ในรายการอย่างน้อย 1 ไฟล์)
+# on: = เหตุการณ์ที่ทำให้ workflow นี้เริ่มรัน
+#   pull_request + branches = PR ที่ "ปลายทาง" เป็น main หรือ dev
+#   push + branches         = มีคน push (รวมถึงการ merge PR) เข้า main
+#
+# paths: = ตัวกรองอีกชั้น: รันก็ต่อเมื่อ "ไฟล์ที่ถูกแก้" ตรงกับรูปแบบในรายการอย่างน้อย 1 ไฟล์
+#   - ต้องผ่านพร้อมกันทั้งสองเงื่อนไข: branch ตรง "และ" paths ตรง
+#   - PR  = ดูไฟล์ที่เปลี่ยนทั้งหมดใน PR
+#   - push = ดูไฟล์ที่เปลี่ยนในการ push/merge ครั้งนั้น
+#   - แก้แต่ README หรือไฟล์นอกรายการ = ไม่รันเลย (ไม่เปลืองเวลา และไม่ deploy เปล่า ๆ)
+#   - แก้ทั้งไฟล์ในรายการและนอกรายการ = รัน
+#   - ** = ทุกไฟล์ในโฟลเดอร์นั้นและโฟลเดอร์ย่อยทุกชั้น, ชื่อไฟล์ตรง ๆ = เฉพาะไฟล์นั้น
+#   - ครอบด้วย '...' กันสับสนกับตัวอักษรพิเศษของ YAML
+#
+# รายการนี้ = ทุกอย่างที่ Worker ใช้ตอน build ถ้าไฟล์เหล่านี้เปลี่ยน สิ่งที่ deploy ก็เปลี่ยนตาม
 on:
   pull_request:
     branches: [main, dev]
     paths:
-      - 'worker/**'
-      - 'my_modules/generators/**'
-      - 'my_modules/be_export_file.js'
-      - 'views/**'
-      - 'public/**'
-      - 'SystemConfig.json'
-      - '.github/workflows/deploy-worker.yml'
+      - 'worker/**'                           # โปรเจ็ค Worker เอง (src, scripts, test, config)
+      - 'my_modules/generators/**'            # ตัวสร้างโค้ด ใช้ร่วมกับแอป Express และถูก bundle เข้า Worker
+      - 'my_modules/be_export_file.js'        # โค้ดส่งออกไฟล์ ที่ worker/src/app.js import ไปใช้
+      - 'views/**'                            # views/index.ejs ถูก render เป็นหน้า gencode.html ตอน build
+      - 'public/**'                           # css/js/img ของแอป ถูกคัดลอกเป็นไฟล์ static ของ Worker
+      - 'SystemConfig.json'                   # ค่า description ที่ใส่ในหน้าเว็บตอน build
+      - '.github/workflows/deploy-worker.yml' # ตัว workflow เอง แก้ไฟล์นี้แล้วให้ลองรันใหม่
   push:
     branches: [main]
+    # รายการ paths ด้านล่างต้องเหมือนของ pull_request ด้านบนทุกบรรทัด (แก้ที่หนึ่งต้องแก้อีกที่ให้ตรงกัน)
     paths:
       - 'worker/**'
       - 'my_modules/generators/**'
